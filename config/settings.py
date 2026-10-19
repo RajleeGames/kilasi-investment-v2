@@ -100,7 +100,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
+     "kilasi_legacy_viewer",
     "core",
     "kilasi_billing",
     "kilasi_transport",
