@@ -1,0 +1,49 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}Data &amp; Backup{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Data &amp; backup</h1>
+    <p>Export Novman Auto Spares business records and download a complete recoverable backup.</p>
+  </div>
+  <a class="btn btn-secondary" href="{% url 'branch_manage' %}">Manage branches</a>
+</div>
+<section class="card novman-export-context">
+  <div><span class="data-eyebrow">EXPORT SCOPE</span><h2>{{ branch.name }}</h2><p>Financial and stock CSV reports use the selected branch. The shared product catalogue includes every product. Switch branches from the header to export another location.</p></div>
+  <span class="badge completed">Admin only</span>
+</section>
+<section class="card compact data-filter-card">
+  <form class="date-filter data-tools-filter" method="get">
+    <label><span>From</span><input class="form-control" type="date" name="start" value="{{ start }}" required></label>
+    <span class="date-arrow">→</span>
+    <label><span>To</span><input class="form-control" type="date" name="end" value="{{ end }}" required></label>
+    <button class="btn btn-secondary" type="submit">Apply range</button>
+  </form>
+</section>
+<div class="data-tools-grid section-gap">
+  {% for key, title in export_kinds %}
+  <section class="card data-tool-card">
+    <div><span class="data-eyebrow">CSV REPORT</span><h2>{{ title }}</h2>
+    {% if key == 'stock' or key == 'products' %}<p>Current inventory or product catalogue, not limited by selected dates.</p>
+    {% elif key == 'debts' %}<p>Lifetime customer credit and payments recorded under the selected branch.</p>
+    {% elif key == 'closings' %}<p>Saved closings only. No fictitious closing records are generated.</p>
+    {% else %}<p>Records for {{ branch.name }} within your chosen dates.</p>{% endif %}
+    </div>
+    <a class="btn btn-secondary" data-no-loader="true" href="{% url 'export_csv' key %}?start={{ start }}&amp;end={{ end }}">Download CSV</a>
+  </section>
+  {% endfor %}
+</div>
+<div class="content-grid two-one section-gap data-backup-grid">
+  <section class="card data-bundle-card">
+    <div><span class="data-eyebrow">BRANCH REPORTS</span><h2>All CSV reports</h2>
+      <p>One ZIP with all CSV reports for <strong>{{ branch.name }}</strong>. Use for Excel and business analysis.</p></div>
+    <a class="btn btn-primary" data-no-loader="true" href="{% url 'export_all_zip' %}?start={{ start }}&amp;end={{ end }}">Download report ZIP</a>
+  </section>
+  <section class="card backup-card">
+    <div><span class="data-eyebrow">FULL BUSINESS BACKUP</span><h2>SQLite database + media</h2>
+      <p>Complete consistent backup of <strong>every branch and all dates</strong>, including customers, products, sales, receipts and branding files. Keep private.</p></div>
+    <a class="btn btn-secondary" data-no-loader="true" href="{% url 'backup_download' %}">Download complete backup</a>
+  </section>
+</div>
+<div class="novman-info-note"><strong>Safety:</strong> A CSV export is not a replacement for the full database backup. Backup ZIPs contain confidential customer information and password hashes. Store copies securely and offsite. End Day is currently a live summary—not a posted closing.</div>
+{% endblock %}

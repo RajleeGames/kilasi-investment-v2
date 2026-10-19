@@ -1,0 +1,18 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}HAMA NA KILASI · {{ title }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>HAMA NA KILASI · {{ title }}</h1><p>Completed old business period. Real historical records, never a new unpaid balance.</p></div><a class="btn btn-secondary" href="/transport/">Transport dashboard</a></div>
+<form class="novman-filters card novman-panel" method="get">
+  <label>Search<input type="search" name="q" class="form-control" value="{{ q }}" maxlength="80" placeholder="ID, customer, route or vehicle"></label>
+  <label>From<input type="date" name="from" class="form-control" value="{{ start }}"></label>
+  <label>To<input type="date" name="to" class="form-control" value="{{ end }}"></label>
+  {% if status_choices %}<label>Original status<select class="form-control" name="status"><option value="">All</option>{% for s in status_choices %}<option value="{{ s }}" {% if s == status %}selected{% endif %}>{{ s|capfirst }}</option>{% endfor %}</select></label>{% endif %}
+  <button class="btn btn-primary">Filter</button><a href="?" class="btn btn-secondary">Clear</a>
+</form>
+<section class="novman-stat-grid"><article class="novman-stat"><label>Matching records</label><strong>{{ total|qty }}</strong></article><article class="novman-stat"><label>{% if kind == 'expenses' %}Recorded expenses{% elif kind == 'trips' %}Recorded trip charges{% else %}Bookings{% endif %}</label><strong>{% if kind == 'bookings' %}—{% else %}{{ total_amount|money }} TZS{% endif %}</strong><small>{% if kind == 'trips' %}Not necessarily cash collected{% else %}Historical period{% endif %}</small></article></section>
+<section class="card section-gap"><div class="table-wrap"><table><thead><tr><th>Old ID</th><th>{{ date_label }}</th><th>{% if kind == 'expenses' %}Description{% else %}Customer{% endif %}</th><th>{% if kind == 'expenses' %}Expense type{% else %}From{% endif %}</th><th>Destination</th><th>Vehicle</th><th>Original status</th>{% if kind != 'bookings' %}<th>Amount · TZS</th>{% endif %}</tr></thead><tbody>
+{% for r in rows %}<tr><td>{{ r.id }}</td><td>{{ r.event_date|slice:':16' }}</td><td>{{ r.customer|default:'—' }}</td><td>{{ r.origin|default:'—' }}</td><td>{{ r.destination|default:'—' }}</td><td>{{ r.vehicle }}</td><td>{{ r.status }}</td>{% if kind != 'bookings' %}<td>{{ r.amount|money }}</td>{% endif %}</tr>
+{% empty %}<tr><td colspan="8" class="empty">No records match your filters.</td></tr>{% endfor %}</tbody></table></div>
+<div class="head-actions" style="padding:12px;justify-content:space-between;flex-wrap:wrap"><span>{{ total|qty }} records · Page {{ page }} of {{ pages }}</span><span>{% if prev %}<a class="btn btn-secondary btn-sm" href="?q={{ q|urlencode }}&amp;from={{ start }}&amp;to={{ end }}&amp;status={{ status|urlencode }}&amp;page={{ prev }}">Previous</a>{% endif %} {% if next %}<a class="btn btn-secondary btn-sm" href="?q={{ q|urlencode }}&amp;from={{ start }}&amp;to={{ end }}&amp;status={{ status|urlencode }}&amp;page={{ next }}">Next</a>{% endif %}</span></div>
+</section>
+{% endblock %}

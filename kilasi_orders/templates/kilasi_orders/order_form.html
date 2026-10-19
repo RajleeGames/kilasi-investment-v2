@@ -1,0 +1,9 @@
+{% extends 'base.html' %}{% block page_title %}New Customer Order{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>New customer order</h1><p>{{ branch.name }} · Record a request and its agreed price. Posting an order does not deduct stock.</p></div><a class="btn btn-secondary" href="{% url 'kilasi_orders:orders' %}">Back</a></div>
+<section class="card form-section-card" style="max-width:900px"><div class="card-head"><div><h2>Order information</h2><p>Choose an existing product or describe a custom item.</p></div></div>
+<form class="form-body" method="post" novalidate>{% csrf_token %}
+{% if form.non_field_errors %}<div class="alert error">{{ form.non_field_errors }}</div>{% endif %}
+<div class="form-grid two">{% for f in form %}<div class="form-group"><label for="{{ f.id_for_label }}">{{ f.label }}</label>{{ f }}{% if f.errors %}<small class="field-error">{{ f.errors|striptags }}</small>{% endif %}</div>{% endfor %}</div>
+<div class="form-actions"><button class="btn btn-primary" type="submit">Create order</button></div></form></section>
+{% endblock %}

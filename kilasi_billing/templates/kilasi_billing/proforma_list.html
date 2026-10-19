@@ -1,0 +1,10 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}Proforma invoices{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Proforma invoices</h1><p>Quotations for {{ branch.name }}. No inventory is reserved or sold.</p></div><a class="btn btn-primary" href="{% url 'billing:proforma_new' %}">New proforma</a></div>
+<form method="get" class="novman-filters card novman-panel"><label>Search by customer or number<input class="form-control" name="q" value="{{ q }}" placeholder="Name or KI-PF number"></label><button class="btn btn-secondary">Search</button></form>
+<section class="card"><div class="table-wrap"><table><thead><tr><th>Number</th><th>Customer</th><th>Date</th><th>Valid until</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody>
+{% for p in rows %}<tr><td><a class="table-link" href="{% url 'billing:proforma_detail' p.pk %}">{{ p.number }}</a></td><td>{{ p.customer_name }}</td><td>{{ p.issue_date|date:'d M Y' }}</td><td>{{ p.valid_until|date:'d M Y'|default:'—' }}</td><td>{{ p.total|money }} TZS</td><td><span class="badge {{ p.status }}">{{ p.get_status_display }}</span></td><td><a class="btn btn-secondary btn-sm" href="{% url 'billing:proforma_detail' p.pk %}">View</a></td></tr>
+{% empty %}<tr><td colspan="7" class="empty">No proformas yet.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

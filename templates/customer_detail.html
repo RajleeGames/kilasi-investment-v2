@@ -1,0 +1,127 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}{{ customer.name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ customer.name }}</h1>
+    <p>{{ customer.phone|default:'No phone' }}{% if customer.email %} · {{ customer.email }}{% endif %}</p>
+  </div>
+  <div class="head-actions">
+    {% if customer.phone %}
+      {% if request.user.profile.role == 'admin' or request.user.is_superuser %}
+      <a class="btn btn-primary" href="{% url 'sms_center:send' %}?customer={{ customer.id }}">Send SMS</a>
+      {% endif %}
+    {% endif %}
+    <a class="btn btn-secondary" href="{% url 'customer_edit' customer.id %}">Edit customer</a>
+    <a class="btn btn-secondary" href="{% url 'debts' %}">Back</a>
+  </div>
+</div>
+
+<div class="debt-kpi-grid customer-account-kpis">
+  <article class="dashboard-kpi">
+    <div class="dashboard-kpi-top"><span>Outstanding</span><span class="kpi-mini">Current</span></div>
+    <div class="dashboard-kpi-value debt-amount">{{ balance|money }} <small>TZS</small></div>
+    <div class="dashboard-kpi-foot">Unpaid balance</div>
+  </article>
+  <article class="dashboard-kpi">
+    <div class="dashboard-kpi-top"><span>Credit sales</span><span class="kpi-mini">{{ credit_sales_count }} sales</span></div>
+    <div class="dashboard-kpi-value">{{ credit_sales_total|money }} <small>TZS</small></div>
+    <div class="dashboard-kpi-foot">Completed debt sales</div>
+  </article>
+  <article class="dashboard-kpi">
+    <div class="dashboard-kpi-top"><span>Payments</span><span class="kpi-mini">Collected</span></div>
+    <div class="dashboard-kpi-value">{{ payments_total|money }} <small>TZS</small></div>
+    <div class="dashboard-kpi-foot">Active repayments</div>
+  </article>
+</div>
+
+<div class="customer-account-grid">
+  <section class="card">
+    <div class="card-head"><div><h2>Customer statement</h2><p>Debt sales increase the balance; repayments reduce it.</p></div></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Reference</th><th>Type</th><th>Debit</th><th>Credit</th><th>Balance</th></tr></thead>
+        <tbody>
+        {% for row in statement %}
+          <tr>
+            <td>{{ row.when|date:'d M Y H:i' }}</td>
+            <td>{% if row.sale %}<a class="table-link" href="{% url 'sale_detail' row.sale.id %}">{{ row.label }}</a>{% else %}{{ row.label }}{% endif %}</td>
+            <td>{{ row.note }}</td>
+            <td>{% if row.debit %}{{ row.debit|money }}{% else %}—{% endif %}</td>
+            <td>{% if row.credit %}{{ row.credit|money }}{% else %}—{% endif %}</td>
+            <td><strong>{{ row.balance|money }}</strong></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="empty">No debt activity yet.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <aside class="card debt-payment-card">
+    <div class="card-head"><div><h2>Record payment</h2><p>Receive money against this customer’s outstanding debt.</p></div></div>
+    {% if balance > 0 %}
+    <form method="post" action="{% url 'customer_payment_create' customer.id %}" class="form-body">
+      {% csrf_token %}
+      <label>Amount<input class="form-control" type="number" step="any" min="0.01" max="{{ balance }}" name="amount" required placeholder="0"></label>
+      <label>Method<select class="form-control" name="method">{% for value,label in payment_methods %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></label>
+      <label>Reference<input class="form-control" name="reference" placeholder="Optional reference"></label>
+      <label>Notes<input class="form-control" name="notes" placeholder="Optional note"></label>
+      <button class="btn btn-primary btn-block" type="submit">Save payment</button>
+    </form>
+    {% else %}
+    <div class="empty-block">This customer has no outstanding debt.</div>
+    {% endif %}
+  </aside>
+</div>
+
+<section class="card section-gap">
+  <div class="card-head"><div><h2>Payment history</h2><p>Repayments are voided rather than deleted so the account remains auditable.</p></div></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Reference</th><th>Received by</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      {% for payment in payment_history %}
+        <tr>
+          <td>{{ payment.paid_at|date:'d M Y H:i' }}</td>
+          <td><strong>{{ payment.amount|money }} TZS</strong></td>
+          <td>{{ payment.get_method_display }}</td>
+          <td>{{ payment.reference|default:'—' }}</td>
+          <td>{{ payment.received_by.get_full_name|default:payment.received_by.username }}</td>
+          <td>{% if payment.is_voided %}<span class="badge voided">Voided</span>{% else %}<span class="badge completed">Active</span>{% endif %}</td>
+          <td class="align-right">{% if not payment.is_voided %}<button class="btn btn-danger-soft btn-sm" type="button" data-payment-void-url="{% url 'customer_payment_void' payment.id %}" data-payment-amount="{{ payment.amount|money }}">Void</button>{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="empty">No payments recorded.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card danger-zone section-gap">
+  <div><h2>{% if customer.is_active %}Deactivate customer{% else %}Activate customer{% endif %}</h2><p>History is preserved. Inactive customers remain visible in statements and old sales.</p></div>
+  <form method="post" action="{% url 'customer_toggle' customer.id %}">
+    {% csrf_token %}
+    <button class="btn btn-secondary" type="submit">{% if customer.is_active %}Deactivate{% else %}Activate{% endif %}</button>
+  </form>
+</section>
+
+<div class="modal" id="voidPaymentModal" role="dialog" aria-modal="true" aria-labelledby="voidPaymentTitle">
+  <div class="modal-card modal-small">
+    <div class="modal-head">
+      <div><h2 id="voidPaymentTitle">Void payment</h2><p id="voidPaymentText">This restores the amount to the customer debt balance.</p></div>
+      <button class="modal-close" type="button" data-close-modal="voidPaymentModal" aria-label="Close">×</button>
+    </div>
+    <form method="post" id="voidPaymentForm" class="form-body modal-form">
+      {% csrf_token %}
+      <label>Reason<input class="form-control" name="reason" required placeholder="Reason for voiding payment"></label>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" type="button" data-close-modal="voidPaymentModal">Cancel</button>
+        <button class="btn btn-danger" type="submit">Void payment</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

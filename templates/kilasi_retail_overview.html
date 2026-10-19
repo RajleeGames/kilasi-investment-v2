@@ -1,0 +1,67 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block title %}Retail inventory · {{ shop.name }}{% endblock %}
+{% block page_title %}Retail inventory{% endblock %}
+{% block content %}
+<div class="page-head dashboard-head">
+  <div>
+    <h1>Retail inventory</h1>
+    <p><strong class="nv-branch-title">{{ branch.name }}</strong> · Branch-specific stock, departments and projected selling value.</p>
+  </div>
+  <div class="head-actions">
+    <a class="btn btn-secondary" href="{% url 'branch_manage' %}">Branches</a>
+    <a class="btn btn-secondary" href="{% url 'stock' %}">Stock control</a>
+    <a class="btn btn-primary" href="{% url 'product_create' %}">Add product</a>
+  </div>
+</div>
+
+<div class="dashboard-kpi-grid ki-retail-kpis">
+  <article class="dashboard-kpi">
+    <div class="dashboard-kpi-top"><span>Stock buying value</span><span class="kpi-mini">FIFO cost</span></div>
+    <div class="dashboard-kpi-value">{{ total_cost|money }} <small>TZS</small></div>
+    <div class="dashboard-kpi-foot">All remaining stock in {{ branch.name }}</div>
+  </article>
+  <article class="dashboard-kpi">
+    <div class="dashboard-kpi-top"><span>Illustrative selling value</span><span class="kpi-mini">Default units</span></div>
+    <div class="dashboard-kpi-value">{{ total_selling|money }} <small>TZS</small></div>
+    <div class="dashboard-kpi-foot">Not revenue or realized profit</div>
+  </article>
+  <article class="dashboard-kpi">
+    <div class="dashboard-kpi-top"><span>Active products</span><span class="kpi-mini">All branches</span></div>
+    <div class="dashboard-kpi-value">{{ active_products }}</div>
+    <div class="dashboard-kpi-foot">{{ stocked_products }} have stock in this branch</div>
+  </article>
+  <article class="dashboard-kpi">
+    <div class="dashboard-kpi-top"><span>Low / out of stock</span><span class="kpi-mini">Attention</span></div>
+    <div class="dashboard-kpi-value">{{ low_stock }}</div>
+    <div class="dashboard-kpi-foot">Active products at or below reorder level</div>
+  </article>
+</div>
+
+<section class="card section-gap">
+  <div class="card-head dashboard-card-head">
+    <div><h2>Retail divisions</h2><p>Click a division to view its products or branch stock.</p></div>
+    <a class="text-link" href="{% url 'products' %}">Full catalogue</a>
+  </div>
+  <div class="ki-division-grid">
+    {% for division in divisions %}
+    <article class="ki-division-card">
+      <div class="ki-division-head">
+        <span class="ki-division-icon" aria-hidden="true">{{ forloop.counter|stringformat:'02d' }}</span>
+        <span class="ki-division-meta">{{ division.products }} active product{{ division.products|pluralize }}</span>
+      </div>
+      <h3>{{ division.name }}</h3>
+      <div class="ki-division-amount">{{ division.stock_value|money }} <small>TZS</small></div>
+      <div class="ki-division-note">Buying value · {{ division.in_stock }} stocked · {{ division.low_stock }} low</div>
+      <div class="ki-division-stat"><span>Illustrative selling value</span><strong>{{ division.selling_value|money }} TZS</strong></div>
+      <div class="ki-division-actions">
+        <a class="btn btn-secondary btn-sm" href="{% url 'products' %}?division={{ division.code }}">Products</a>
+        <a class="btn btn-secondary btn-sm" href="{% url 'stock' %}?division={{ division.code }}">Stock</a>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+<section class="card compact section-gap ki-retail-note">
+  <p><strong>Valuation note.</strong> Stock buying value uses the actual remaining FIFO batches. Illustrative selling value uses full sellable quantities at each product's current default-unit price, excluding discounts, taxes and other expenses. Unpriced products: {{ unpriced_products }}. It is not a sales forecast, revenue, or profit.</p>
+</section>
+{% endblock %}

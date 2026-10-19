@@ -1,0 +1,9 @@
+{% if page.paginator.num_pages > 1 %}
+<div class="sms-pagination">
+  <span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+  <div>
+    {% if page.has_previous %}<a class="btn btn-secondary btn-sm" href="?page={{ page.previous_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if status %}&status={{ status|urlencode }}{% endif %}">Previous</a>{% endif %}
+    {% if page.has_next %}<a class="btn btn-secondary btn-sm" href="?page={{ page.next_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if status %}&status={{ status|urlencode }}{% endif %}">Next</a>{% endif %}
+  </div>
+</div>
+{% endif %}

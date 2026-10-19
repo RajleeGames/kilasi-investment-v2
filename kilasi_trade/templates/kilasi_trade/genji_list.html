@@ -1,0 +1,10 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}Genji{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Genji transactions</h1><p>{{ branch.name }} · Separate item trades and profit tracking.</p></div><div class="head-actions"><a href="{% url 'kilasi_trade:overview' %}" class="btn btn-secondary">Overview</a><a href="{% url 'kilasi_trade:genji_new' %}" class="btn btn-primary">Add Genji</a></div></div>
+<form class="novman-filters" method="get"><label>Search<input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Item or customer"></label><button class="btn btn-primary">Search</button></form>
+<section class="card"><div class="table-wrap"><table><thead><tr><th>Item / Customer</th><th>Buy / Sell dates</th><th>Qty</th><th>Buying</th><th>Selling</th><th>Profit</th><th>Status</th><th></th></tr></thead><tbody>
+{% for obj in rows %}<tr><td><strong>{{ obj.item_name }}</strong><small class="cell-sub">{{ obj.customer_name|default:'—' }} · {{ obj.customer_phone|default:'—' }}</small></td><td>{{ obj.buy_date }} / {{ obj.sell_date }}</td><td>{{ obj.quantity }}</td><td>{{ obj.total_buying|money }}</td><td>{{ obj.total_selling|money }}</td><td>{% if obj.status == 'completed' %}{{ obj.profit|money }}{% else %}—{% endif %}</td><td><span class="badge {% if obj.status == 'completed' %}completed{% else %}voided{% endif %}">{{ obj.get_status_display }}</span></td>
+<td>{% if request.user.is_superuser or request.user.profile.role == 'admin' %}{% if obj.status == 'completed' %}<form method="post" action="{% url 'kilasi_trade:genji_void' obj.pk %}">{% csrf_token %}<input class="form-control" name="reason" required minlength="5" placeholder="Void reason"><button type="submit" class="btn btn-danger-soft btn-sm">Void</button></form>{% endif %}{% endif %}</td></tr>
+{% empty %}<tr><td colspan="8" class="empty">No Genji transactions yet.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

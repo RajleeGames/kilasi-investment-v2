@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+
+{% block body_class %}pos-page{% endblock %}
+{% block page_title %}Point of Sale{% endblock %}
+
+{% block content %}
+<div class="pos-layout pos-workspace">
+  <section class="pos-products card">
+    <div class="pos-toolbar">
+      <div class="pos-toolbar-copy">
+        <h1>New sale — {{ novman_branch.name }}</h1>
+        <p>Select a product, unit and quantity.</p>
+      </div>
+
+      <div class="search-box">
+        <input
+          id="posSearch"
+          class="form-control"
+          type="search"
+          autocomplete="off"
+          placeholder="Search product, category or unit"
+          aria-label="Search products"
+        >
+      </div>
+    </div>
+
+    <div class="pos-category-wrap">
+      <div class="pos-categories" id="posCategories" aria-label="Product categories"></div>
+      <span class="product-count" id="productCount"></span>
+    </div>
+
+    <div class="product-scroll" id="productScroll">
+      <div class="product-grid" id="productGrid"></div>
+    </div>
+  </section>
+
+  <aside class="cart-panel card">
+    <div class="cart-head">
+      <div>
+        <h2>Current bill</h2>
+        <p id="cartCount">0 items</p>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="clearCart" type="button">Clear</button>
+    </div>
+
+    <div class="cart-lines" id="cartLines">
+      <div class="cart-empty">No items added yet.</div>
+    </div>
+
+    <div class="cart-checkout">
+      <div class="cart-summary">
+        <div>
+          <span>Subtotal</span>
+          <strong id="cartSubtotal">0</strong>
+        </div>
+        <div>
+          <span>Item discounts</span>
+          <strong id="cartItemDiscount">0</strong>
+        </div>
+
+        <label class="summary-input">
+          <span>Bill discount</span>
+          <input
+            id="saleDiscount"
+            class="form-control money-input"
+            inputmode="decimal"
+            autocomplete="off"
+            placeholder="0"
+          >
+        </label>
+
+        <div class="grand-row">
+          <span>Total</span>
+          <strong><b id="cartGrand">0</b> TZS</strong>
+        </div>
+      </div>
+
+      <div class="checkout-fields">
+        <label class="checkout-field">
+          <span>Customer</span>
+          <input id="customerName" class="form-control" autocomplete="off" placeholder="Name (required for debt)">
+        </label>
+
+        <label class="checkout-field">
+          <span>Phone</span>
+          <input id="customerPhone" class="form-control" autocomplete="off" inputmode="tel" placeholder="Phone (optional)">
+        </label>
+
+        <label class="checkout-field checkout-field-payment">
+          <span>Payment</span>
+          <select id="paymentMethod" class="form-control">
+            <option value="cash">Cash</option>
+            <option value="mobile_money">Mobile Money</option>
+            <option value="bank">Bank</option>
+            <option value="debt">Debt</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="pos-debt-note hidden" id="posDebtNote">
+        Debt sale: customer name is required. The full bill will be added to that customer’s balance.
+      </div>
+
+      <button class="btn btn-primary btn-block btn-lg" id="completeSale" type="button">Complete sale</button>
+      <div class="form-error" id="posError"></div>
+    </div>
+  </aside>
+</div>
+
+<div class="modal" id="addModal" role="dialog" aria-modal="true" aria-labelledby="modalProductName">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div>
+        <h2 id="modalProductName">Product</h2>
+        <p id="modalStock"></p>
+      </div>
+      <button class="modal-close" type="button" data-close-modal="addModal" aria-label="Close">×</button>
+    </div>
+
+    <div class="form-body modal-form">
+      <div class="form-grid one">
+        <label>
+          Selling unit
+          <select id="modalUnit" class="form-control"></select>
+        </label>
+
+        <label>
+          Quantity
+          <input
+            id="modalQty"
+            class="form-control"
+            inputmode="decimal"
+            step="any"
+            autocomplete="off"
+            placeholder="e.g. 1.5"
+          >
+        </label>
+
+        <label>
+          Money discount
+          <input
+            id="modalDiscount"
+            class="form-control"
+            inputmode="decimal"
+            step="any"
+            autocomplete="off"
+            placeholder="0"
+          >
+        </label>
+
+        <div class="modal-total">
+          <span>Line total</span>
+          <strong id="modalLineTotal">0 TZS</strong>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" type="button" data-close-modal="addModal">Cancel</button>
+        <button class="btn btn-primary" id="addToCart" type="button">Add to bill</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<form id="csrfForm" style="display:none">{% csrf_token %}</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.MFP_PRODUCTS = {{ products_json|safe }};
+</script>
+{% endblock %}

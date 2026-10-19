@@ -1,0 +1,8 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}Commercial invoices{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Commercial invoices</h1><p>Issued from completed Novman sales · {{ branch.name }}. No duplicate revenue or stock deduction.</p></div><a class="btn btn-primary" href="{% url 'billing:home' %}">Select sale</a></div>
+<form method="get" class="novman-filters card novman-panel"><label>Search<input class="form-control" name="q" value="{{ q }}" placeholder="Invoice, receipt, customer"></label><button class="btn btn-secondary">Search</button></form>
+<section class="card"><div class="table-wrap"><table><thead><tr><th>Invoice</th><th>Sale</th><th>Customer</th><th>Amount</th><th>Allocated paid</th><th>Unallocated balance</th><th>Status</th></tr></thead><tbody>
+{% for doc in rows %}<tr><td><a class="table-link" href="{% url 'billing:invoice_detail' doc.pk %}">{{ doc.number }}</a></td><td>{{ doc.sale.receipt_no }}</td><td>{{ doc.sale.customer_name|default:'Walk-in' }}</td><td>{{ doc.sale.grand_total|money }}</td><td>{{ doc.paid|money }}</td><td>{{ doc.balance|money }}</td><td><span class="badge">{{ doc.payment_state }}</span></td></tr>{% empty %}<tr><td colspan="7" class="empty">No commercial invoices issued for this branch.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

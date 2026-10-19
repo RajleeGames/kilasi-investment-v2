@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block page_title %}Users{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Users</h1><p>Manage Admin and Cashier accounts without losing transaction history.</p></div><a class="btn btn-primary" href="{% url 'user_create' %}">Add user</a></div>
+<section class="card"><div class="table-wrap"><table><thead><tr><th>User</th><th>Name</th><th>Role</th><th>Status</th><th class="align-right">Actions</th></tr></thead><tbody>
+{% for u in users %}
+<tr>
+  <td><span class="table-primary">{{ u.username }}</span>{% if u == request.user %}<small class="cell-sub">Current account</small>{% endif %}</td>
+  <td>{{ u.get_full_name|default:'-' }}</td>
+  <td>{{ u.profile.get_role_display }}</td>
+  <td><span class="badge {% if u.is_active %}completed{% else %}voided{% endif %}">{% if u.is_active %}Active{% else %}Disabled{% endif %}</span></td>
+  <td><div class="row-actions"><a class="btn btn-secondary btn-sm" href="{% url 'user_edit' u.id %}">Edit</a><form method="post" action="{% url 'user_toggle' u.id %}">{% csrf_token %}<button class="btn btn-ghost btn-sm" {% if u == request.user %}disabled{% endif %}>{% if u.is_active %}Disable{% else %}Enable{% endif %}</button></form><button class="btn btn-danger-soft btn-sm" type="button" {% if u == request.user %}disabled{% endif %} data-confirm-url="{% url 'user_delete' u.id %}" data-confirm-title="Delete {{ u.username }}?" data-confirm-text="If this user has transactions, the account will be disabled instead of removed so audit history remains intact." data-confirm-label="Delete / disable">Delete</button></div></td>
+</tr>
+{% empty %}<tr><td colspan="5" class="empty">No users found.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

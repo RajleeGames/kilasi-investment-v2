@@ -1,0 +1,22 @@
+{% load mfp %}
+{% if not hama_hidden %}
+<section class="card section-gap" id="historical-hama-summary">
+  <div class="card-head"><div><h2>HAMA NA KILASI · Previous period</h2><p>All historical Transport records preserved; new operations above remain separate.</p></div><a class="btn btn-secondary" href="/transport/closed-history/">Closed register</a></div>
+  <form method="get" class="novman-filters card novman-panel">
+    <label>History from<input type="date" class="form-control" name="history_from" value="{{ hama.start }}"></label>
+    <label>History to<input type="date" class="form-control" name="history_to" value="{{ hama.end }}"></label>
+    <button type="submit" class="btn btn-primary">Filter old history</button>
+    <a href="/transport/#historical-hama-summary" class="btn btn-secondary">All-time history</a>
+  </form>
+  <div class="novman-stat-grid">
+    <article class="novman-stat"><label>Historical trips</label><strong>{{ hama.trips|qty }}</strong><small>Previous period · closed</small></article>
+    <article class="novman-stat"><label>Historical bookings</label><strong>{{ hama.bookings|qty }}</strong></article>
+    <article class="novman-stat"><label>Historical expenses</label><strong>{{ hama.expenses|qty }}</strong></article>
+    <article class="novman-stat"><label>Recorded trip charges</label><strong>{{ hama.charges|money }} TZS</strong><small>Excludes cancelled · NOT confirmed cash collections</small></article>
+    <article class="novman-stat"><label>Recorded expenses</label><strong>{{ hama.spent|money }} TZS</strong></article>
+    <article class="novman-stat"><label>Old fleet / drivers</label><strong>{{ hama.fleet }} / {{ hama.drivers }}</strong></article>
+  </div>
+  <p class="cell-sub">All old Transport work is closed by owner confirmation. Original statuses: Completed {{ hama.statuses.completed|default:0 }}, In transit {{ hama.statuses.in_transit|default:0 }}, Pending {{ hama.statuses.pending|default:0 }}, Cancelled {{ hama.statuses.cancelled|default:0 }}. No historical balance is carried forward.</p>
+  <div class="head-actions"><a class="btn btn-secondary" href="/transport/history/trips/">Browse trips</a><a class="btn btn-secondary" href="/transport/history/bookings/">Browse bookings</a><a class="btn btn-secondary" href="/transport/history/expenses/">Browse expenses</a></div>
+</section>
+{% endif %}

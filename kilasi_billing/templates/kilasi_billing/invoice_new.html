@@ -1,0 +1,7 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}Issue invoice{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Issue commercial invoice</h1><p>Source receipt {{ sale.receipt_no }} · {{ branch.name }}</p></div><a class="btn btn-secondary" href="{% url 'sale_detail' sale.pk %}">Back to sale</a></div>
+<section class="card"><div class="card-head"><div><h2>Existing completed sale</h2><p>Document creation does not create another sale or deduct inventory.</p></div></div><div class="form-body"><div class="kb-meta"><div><small>Customer</small><strong>{{ sale.customer_name|default:'Walk-in' }}</strong></div><div><small>Grand total</small><strong>{{ sale.grand_total|money }} TZS</strong><span>Payment method: {{ sale.get_payment_method_display }}</span></div></div></div></section>
+<form method="post" class="card section-gap">{% csrf_token %}<div class="card-head"><h2>Invoice details</h2></div><div class="form-body">{{ form.non_field_errors }}<div class="form-grid two"><label>Issue date{{ form.issue_date }}{{ form.issue_date.errors }}</label><label>Due date{{ form.due_date }}{{ form.due_date.errors }}</label></div><label>Notes{{ form.notes }}{{ form.notes.errors }}</label><div class="form-actions"><button class="btn btn-primary">Issue invoice</button></div></div></form>
+{% endblock %}

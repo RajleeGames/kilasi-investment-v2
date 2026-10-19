@@ -1,0 +1,8 @@
+<div class="sms-tabs" role="navigation" aria-label="SMS Center">
+  <a href="{% url 'sms_center:dashboard' %}" class="sms-tab {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Overview</a>
+  <a href="{% url 'sms_center:send' %}" class="sms-tab {% if request.resolver_match.url_name == 'send' %}active{% endif %}">Send SMS</a>
+  <a href="{% url 'sms_center:contacts' %}" class="sms-tab {% if 'contact' in request.resolver_match.url_name or request.resolver_match.url_name == 'import_contacts' %}active{% endif %}">Contacts</a>
+  <a href="{% url 'sms_center:templates' %}" class="sms-tab {% if 'template' in request.resolver_match.url_name %}active{% endif %}">Templates</a>
+  <a href="{% url 'sms_center:senders' %}" class="sms-tab {% if 'sender' in request.resolver_match.url_name %}active{% endif %}">Sender IDs</a>
+  <a href="{% url 'sms_center:history' %}" class="sms-tab {% if request.resolver_match.url_name == 'history' or request.resolver_match.url_name == 'campaign_detail' %}active{% endif %}">History</a>
+</div>

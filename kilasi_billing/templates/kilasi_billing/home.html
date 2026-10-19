@@ -1,0 +1,16 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}Retail billing{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Retail billing</h1><p>Invoices, proforma quotations, delivery notes and payments · {{ branch.name }}.</p></div>
+<div class="head-actions"><a class="btn btn-secondary" href="{% url 'billing:proformas' %}">Proformas</a><a class="btn btn-primary" href="{% url 'billing:proforma_new' %}">New proforma</a></div></div>
+<div class="novman-stat-grid kb-dashboard-grid">
+  <a class="novman-stat kb-stat-link" href="{% url 'billing:invoices' %}"><label>Invoices</label><strong>{{ invoice_count }}</strong><small>Based on real Novman sales</small></a>
+  <a class="novman-stat kb-stat-link" href="{% url 'billing:proformas' %}"><label>Proformas</label><strong>{{ proforma_count }}</strong><small>Quotations, no stock movement</small></a>
+  <a class="novman-stat kb-stat-link" href="{% url 'billing:deliveries' %}"><label>Delivery notes</label><strong>{{ delivery_count }}</strong><small>Linked to completed sales</small></a>
+</div>
+<section class="card section-gap"><div class="card-head"><div><h2>Recent completed sales</h2><p>Select a sale to issue its first invoice or delivery note. Creating a document doesn't record another sale.</p></div><a class="text-link" href="{% url 'sales' %}">All sales</a></div>
+<div class="table-wrap"><table><thead><tr><th>Receipt</th><th>Customer</th><th>Date</th><th>Amount</th><th>Documents</th></tr></thead><tbody>
+{% for s in recent_sales %}<tr><td><a class="table-link" href="{% url 'sale_detail' s.pk %}">{{ s.receipt_no }}</a></td><td>{{ s.customer_name|default:'Walk-in customer' }}</td><td>{{ s.sold_at|date:'d M Y' }}</td><td>{{ s.grand_total|money }} TZS</td><td><div class="row-actions"><a class="btn btn-secondary btn-sm" href="{% url 'billing:invoice_new' s.pk %}">Invoice</a><a class="btn btn-secondary btn-sm" href="{% url 'billing:delivery_new' s.pk %}">Delivery note</a></div></td></tr>
+{% empty %}<tr><td colspan="5" class="empty">No completed sales yet. Create a POS sale first, or create a standalone proforma quotation.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

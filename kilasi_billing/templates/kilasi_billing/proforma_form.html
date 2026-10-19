@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block page_title %}{% if doc %}Edit proforma{% else %}New proforma{% endif %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% if doc %}Edit {{ doc.number }}{% else %}New proforma quotation{% endif %}</h1><p>{{ branch.name }} · Enter proposed items; nothing is deducted from stock.</p></div><a class="btn btn-secondary" href="{% url 'billing:proformas' %}">Back to proformas</a></div>
+<form method="post" class="kb-stack" novalidate>{% csrf_token %}
+  <section class="card"><div class="card-head"><div><h2>Customer and validity</h2><p>Information shown on the printed quotation.</p></div></div><div class="form-body">
+    {{ form.non_field_errors }}
+    <div class="form-grid two"><label>Customer name{{ form.customer_name }}{{ form.customer_name.errors }}</label><label>Phone{{ form.customer_phone }}{{ form.customer_phone.errors }}</label></div>
+    <label>Address{{ form.customer_address }}{{ form.customer_address.errors }}</label>
+    <div class="form-grid two"><label>Issue date{{ form.issue_date }}{{ form.issue_date.errors }}</label><label>Valid until{{ form.valid_until }}{{ form.valid_until.errors }}</label></div>
+    <label>Notes{{ form.notes }}{{ form.notes.errors }}</label>
+  </div></section>
+  <section class="card"><div class="card-head"><div><h2>Quoted products and services</h2><p>Enter description, quantity, unit, quoted unit price and optional discount.</p></div><button class="btn btn-secondary btn-sm" type="button" id="kbAddLine">Add line</button></div>
+    <div class="kb-lines-wrap">{{ lines.management_form }}{{ lines.non_form_errors }}<div class="kb-lines-table-wrap"><table class="kb-lines-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit</th><th>Price (TZS)</th><th>Discount</th><th>Delete</th></tr></thead><tbody id="kbLineRows">
+    {% for item in lines %}<tr class="kb-line-row"><td>{{ item.id }}{{ item.description }}{{ item.description.errors }}</td><td>{{ item.quantity }}{{ item.quantity.errors }}</td><td>{{ item.unit }}{{ item.unit.errors }}</td><td>{{ item.unit_price }}{{ item.unit_price.errors }}</td><td>{{ item.discount }}{{ item.discount.errors }}</td><td>{{ item.DELETE }}</td></tr>{% endfor %}
+    </tbody></table></div></div>
+    <template id="kbEmptyLineTemplate"><tr class="kb-line-row"><td>{{ lines.empty_form.id }}{{ lines.empty_form.description }}</td><td>{{ lines.empty_form.quantity }}</td><td>{{ lines.empty_form.unit }}</td><td>{{ lines.empty_form.unit_price }}</td><td>{{ lines.empty_form.discount }}</td><td>{{ lines.empty_form.DELETE }}</td></tr></template>
+  </section>
+  <div class="head-actions kb-bottom-actions"><a class="btn btn-secondary" href="{% url 'billing:proformas' %}">Cancel</a><button class="btn btn-primary" type="submit">Save draft proforma</button></div>
+</form>
+{% endblock %}

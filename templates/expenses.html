@@ -1,0 +1,24 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}Expenses{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Expenses</h1><p>Record and manage operating costs that reduce net profit.</p></div></div>
+<div class="content-grid one-two">
+  <section class="card form-section-card">
+    <div class="card-head"><div><h2>Add expense</h2><p>Electricity, transport, ice, packaging and other costs.</p></div></div>
+    <form method="post" class="form-body">{% csrf_token %}
+      <label>Category{{ form.category }}</label>
+      <label>Description{{ form.description }}</label>
+      <label>Amount{{ form.amount }}</label>
+      <label>Date{{ form.expense_date }}</label>
+      <div class="form-actions"><button class="btn btn-primary">Save expense</button></div>
+    </form>
+  </section>
+  <section class="card">
+    <div class="card-head"><div><h2>Recent expenses</h2><p>Admin can correct or remove wrongly entered expenses.</p></div></div>
+    <div class="table-wrap"><table><thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>By</th><th class="align-right">Actions</th></tr></thead><tbody>
+      {% for e in expenses %}<tr><td>{{ e.expense_date|date:'d M Y' }}</td><td>{{ e.get_category_display }}</td><td>{{ e.description }}</td><td>{{ e.amount|money }} TZS</td><td>{{ e.created_by.username }}</td><td><div class="row-actions"><a class="btn btn-secondary btn-sm" href="{% url 'expense_edit' e.id %}">Edit</a><button class="btn btn-danger-soft btn-sm" type="button" data-confirm-url="{% url 'expense_delete' e.id %}" data-confirm-title="Delete expense?" data-confirm-text="This removes the expense from profit reports. Use this only when the record was entered by mistake." data-confirm-label="Delete expense">Delete</button></div></td></tr>
+      {% empty %}<tr><td colspan="6" class="empty">No expenses yet.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,299 @@
+{% extends 'base.html' %}
+{% load mfp %}
+
+{% block page_title %}
+Correct Buying Price
+{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+
+    <div>
+
+        <h1>Correct buying price</h1>
+
+        <p>
+            {{ product.name }}
+        </p>
+
+    </div>
+
+    <div class="head-actions">
+
+        <a
+            href="{% url 'stock_detail' product.id %}"
+            class="btn btn-secondary"
+        >
+            Cancel
+        </a>
+
+    </div>
+
+</div>
+
+
+<div class="stock-cost-edit-layout">
+
+    <!-- ===================================================== -->
+    <!-- FORM                                                  -->
+    <!-- ===================================================== -->
+
+    <section class="card form-section-card">
+
+        <div class="card-head">
+
+            <div>
+
+                <h2>Buying price</h2>
+
+                <p>
+                    Correct an incorrectly entered
+                    buying price.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <form
+            method="post"
+            class="form-body"
+        >
+
+            {% csrf_token %}
+
+
+            <div class="stock-edit-product">
+
+                <span>Product</span>
+
+                <strong>
+                    {{ product.name }}
+                </strong>
+
+            </div>
+
+
+            <div class="stock-edit-product">
+
+                <span>Stock source</span>
+
+                <strong>
+                    {{ batch.get_source_display }}
+                </strong>
+
+            </div>
+
+
+            {% if batch.purchase_item_id %}
+
+                <div class="stock-edit-product">
+
+                    <span>Purchase</span>
+
+                    <strong>
+                        PUR-{{ batch.purchase_item.purchase_id|stringformat:'05d' }}
+                    </strong>
+
+                </div>
+
+
+                <div class="stock-edit-product">
+
+                    <span>Received quantity</span>
+
+                    <strong>
+                        {{ batch.purchase_item.quantity|qty }}
+                        {{ batch.purchase_item.unit.symbol }}
+                    </strong>
+
+                </div>
+
+            {% else %}
+
+                <div class="stock-edit-product">
+
+                    <span>Received quantity</span>
+
+                    <strong>
+                        {{ batch.quantity_received_base|qty }}
+                        {{ product.base_unit }}
+                    </strong>
+
+                </div>
+
+            {% endif %}
+
+
+            <label class="stock-price-field">
+
+                <span>
+                    {{ cost_label }}
+                </span>
+
+                <div class="stock-price-input-wrap">
+
+                    <input
+                        type="number"
+                        name="cost_per_unit"
+                        class="form-control"
+                        value="{{ current_cost }}"
+                        min="0"
+                        step="0.01"
+                        inputmode="decimal"
+                        autocomplete="off"
+                        required
+                    >
+
+                    <span>
+                        TZS
+                    </span>
+
+                </div>
+
+                <small>
+                    Current:
+                    {{ current_cost|money }}
+                    TZS / {{ cost_unit }}
+                </small>
+
+            </label>
+
+
+            <div class="stock-safe-edit-note">
+
+                <strong>
+                    Safe correction
+                </strong>
+
+                <p>
+                    This batch has not been used yet,
+                    so its buying price can still be
+                    corrected safely.
+                </p>
+
+            </div>
+
+
+            <div class="form-actions">
+
+                <a
+                    href="{% url 'stock_detail' product.id %}"
+                    class="btn btn-secondary"
+                >
+                    Cancel
+                </a>
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    Save buying price
+                </button>
+
+            </div>
+
+        </form>
+
+    </section>
+
+
+    <!-- ===================================================== -->
+    <!-- INFORMATION                                           -->
+    <!-- ===================================================== -->
+
+    <aside class="card stock-cost-side">
+
+        <div class="card-head">
+
+            <div>
+
+                <h2>Batch information</h2>
+
+                <p>
+                    Cost being corrected.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="summary-list">
+
+            <div>
+
+                <span>Product</span>
+
+                <strong>
+                    {{ product.name }}
+                </strong>
+
+            </div>
+
+
+            <div>
+
+                <span>Source</span>
+
+                <strong>
+                    {{ batch.get_source_display }}
+                </strong>
+
+            </div>
+
+
+            <div>
+
+                <span>Received</span>
+
+                <strong>
+                    {{ batch.received_at|date:'d M Y H:i' }}
+                </strong>
+
+            </div>
+
+
+            <div>
+
+                <span>Reference</span>
+
+                <strong>
+                    {{ batch.reference|default:'-' }}
+                </strong>
+
+            </div>
+
+
+            <div>
+
+                <span>Current quantity</span>
+
+                <strong>
+                    {{ batch.quantity_remaining_base|qty }}
+                    {{ product.base_unit }}
+                </strong>
+
+            </div>
+
+
+            <div>
+
+                <span>Current base cost</span>
+
+                <strong>
+                    {{ batch.unit_cost_base|money }}
+                    TZS
+                </strong>
+
+            </div>
+
+        </div>
+
+    </aside>
+
+</div>
+
+{% endblock %}

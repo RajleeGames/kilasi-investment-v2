@@ -1,0 +1,14 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}Stock Control{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Stock — {{ branch.name }}</h1><p>Current branch stock, FIFO buying cost and valuation. Other branches remain separate.</p></div><div class="head-actions"><a class="btn btn-secondary" href="{% url 'retail_overview' %}">Retail overview</a><a class="btn btn-secondary" href="{% url 'stock_transfers' %}">Transfer</a><a class="btn btn-secondary" href="{% url 'stock_adjust' %}">Adjust stock</a><a class="btn btn-primary" href="{% url 'opening_stock' %}">Opening stock</a></div></div>
+<form class="novman-filters" method="get">
+  <label>Search<input class="form-control" name="q" type="search" value="{{ q }}" placeholder="Product, barcode or category"></label>
+  <label>Retail division<select name="division" class="form-control"><option value="">All divisions</option>{% for code,label in division_choices %}<option value="{{ code }}" {% if division == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+  <button class="btn btn-primary">Apply filters</button><a class="btn btn-secondary" href="{% url 'stock' %}">Clear</a>
+</form>
+<section class="card"><div class="table-wrap"><table><thead><tr><th>Product</th><th>Division</th><th>Category</th><th>Available</th><th>Average buying</th><th>Stock value</th><th>Status</th><th></th></tr></thead><tbody>
+{% for row in rows %}<tr><td><span class="table-primary">{{ row.product.name }}</span><small class="cell-sub">{{ row.product.barcode|default:'—' }}</small></td><td>{{ row.product.get_retail_division_display }}</td><td>{{ row.product.category.name }}</td><td>{{ row.quantity|qty }} {{ row.product.base_unit }}</td><td>{{ row.avg|money }} TZS</td><td>{{ row.value|money }} TZS</td><td>{% if row.quantity <= 0 %}<span class="badge low">Out</span>{% elif row.quantity <= row.product.low_stock_level %}<span class="badge low">Low</span>{% else %}<span class="badge completed">OK</span>{% endif %}</td><td><a class="btn btn-secondary btn-sm" href="{% url 'stock_detail' row.product.id %}">Details</a></td></tr>
+{% empty %}<tr><td colspan="8" class="empty">No stock products found for this filter.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

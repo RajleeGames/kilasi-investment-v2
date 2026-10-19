@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block page_title %}Edit Expense{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Edit expense</h1><p>Correct the expense details without creating another record.</p></div><a class="btn btn-secondary" href="{% url 'expenses' %}">Back</a></div>
+<section class="card form-card">
+  <form method="post" class="form-body">{% csrf_token %}
+    <label>Category{{ form.category }}</label>
+    <label>Description{{ form.description }}</label>
+    <label>Amount{{ form.amount }}</label>
+    <label>Date{{ form.expense_date }}</label>
+    <div class="form-actions"><a class="btn btn-secondary" href="{% url 'expenses' %}">Cancel</a><button class="btn btn-primary">Save changes</button></div>
+  </form>
+</section>
+{% endblock %}

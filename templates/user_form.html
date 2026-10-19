@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block page_title %}{{ title|default:'User' }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ title|default:'User' }}</h1><p>{% if target_user %}Update account details, role, status or password.{% else %}Create an Admin or Cashier account.{% endif %}</p></div><a class="btn btn-secondary" href="{% url 'users' %}">Back</a></div>
+<section class="card form-card">
+  <form method="post" class="form-body">{% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert error">{{ form.non_field_errors|striptags }}</div>{% endif %}
+    <label>Username{{ form.username }}{% if form.username.errors %}<span class="field-error">{{ form.username.errors|striptags }}</span>{% endif %}</label>
+    <div class="form-grid two"><label>First name{{ form.first_name }}</label><label>Last name{{ form.last_name }}</label></div>
+    <label>Role{{ form.role }}</label>
+    <label>Assigned branch{{ form.branch }}{% if form.branch.errors %}<span class="field-error">{{ form.branch.errors|striptags }}</span>{% endif %}</label>
+    <label>Password{{ form.password }}{% if form.password.help_text %}<span class="field-note">{{ form.password.help_text }}</span>{% endif %}</label>
+    <label class="toggle-row"><span><span class="toggle-title">Active account</span><small>User can sign in while active.</small></span>{{ form.is_active }}</label>
+    <div class="form-actions"><a class="btn btn-secondary" href="{% url 'users' %}">Cancel</a><button class="btn btn-primary">{{ submit_label|default:'Save' }}</button></div>
+  </form>
+</section>
+{% endblock %}

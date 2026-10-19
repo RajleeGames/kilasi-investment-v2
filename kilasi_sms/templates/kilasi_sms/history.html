@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block page_title %}{{ department|title }} SMS History{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ department|title }} SMS history</h1><p>{{ branch.name }} · Each department and branch has its own visible dispatch records.</p></div><a href="{{ hub_url }}" class="btn btn-primary">New SMS draft</a></div>
+<section class="card"><div class="table-wrap"><table><thead><tr><th>Created</th><th>Title</th><th>Created by</th><th>Recipients</th><th>Status</th><th></th></tr></thead><tbody>
+{% for d in records %}<tr><td>{{ d.created_at|date:'d M Y H:i' }}</td><td><span class="table-primary">{{ d.campaign.title }}</span></td><td>{{ d.created_by.username }}</td><td>{{ d.campaign.recipient_count }}</td><td>{{ d.get_status_display }}</td><td><a href="{{ d.detail_url }}" class="btn btn-secondary btn-sm">Review</a></td></tr>{% empty %}<tr><td colspan="6" class="empty">No messages yet.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% if records.has_other_pages %}<div class="head-actions section-gap">{% if records.has_previous %}<a class="btn btn-secondary btn-sm" href="?page={{ records.previous_page_number }}">Previous</a>{% endif %}<span>Page {{ records.number }} of {{ records.paginator.num_pages }}</span>{% if records.has_next %}<a class="btn btn-secondary btn-sm" href="?page={{ records.next_page_number }}">Next</a>{% endif %}</div>{% endif %}
+{% endblock %}

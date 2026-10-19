@@ -1,0 +1,17 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}Purchases{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Purchases</h1><p>Every receipt keeps its own FIFO buying cost. Used stock cannot be silently deleted.</p></div><a class="btn btn-primary" href="{% url 'purchase_create' %}">Receive stock</a></div>
+<section class="card"><div class="table-wrap"><table><thead><tr><th>Purchase</th><th>Date</th><th>Supplier</th><th>Items</th><th>Total cost</th><th>By</th><th class="align-right">Actions</th></tr></thead><tbody>
+{% for p in purchases %}
+<tr>
+  <td><span class="table-primary">PUR-{{ p.id|stringformat:'05d' }}</span><small class="cell-sub">{{ p.invoice_number|default:'No invoice' }}</small></td>
+  <td>{{ p.purchased_at|date:'d M Y H:i' }}</td>
+  <td>{{ p.supplier_name|default:'-' }}</td>
+  <td>{% for i in p.items.all %}<span class="cell-line">{{ i.product.name }} · {{ i.quantity|qty }} {{ i.unit.symbol }} @ {{ i.cost_per_unit|money }}</span>{% endfor %}</td>
+  <td>{{ p.total|money }} TZS</td><td>{{ p.created_by.username }}</td>
+  <td><div class="row-actions"><a class="btn btn-secondary btn-sm" href="{% url 'purchase_edit' p.id %}">Edit details</a><button class="btn btn-danger-soft btn-sm" type="button" data-confirm-url="{% url 'purchase_delete' p.id %}" data-confirm-title="Delete PUR-{{ p.id|stringformat:'05d' }}?" data-confirm-text="Mega Fish Point will only delete this purchase if all stock from it is still untouched. If any quantity was sold or adjusted, deletion is blocked." data-confirm-label="Delete purchase">Delete</button></div></td>
+</tr>
+{% empty %}<tr><td colspan="7" class="empty">No purchases yet.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

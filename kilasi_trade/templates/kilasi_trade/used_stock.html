@@ -1,0 +1,9 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}Used Stock{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Used items from Top-Ups</h1><p>{{ branch.name }} · Tracked independently of normal retail products.</p></div><a class="btn btn-secondary" href="{% url 'kilasi_trade:overview' %}">Overview</a></div>
+<form class="novman-filters" method="get"><label>Status<select name="status" class="form-control"><option value="">All items</option><option value="available" {% if status == 'available' %}selected{% endif %}>Available</option><option value="sold" {% if status == 'sold' %}selected{% endif %}>Sold</option></select></label><button class="btn btn-primary">Apply</button></form>
+<section class="card"><div class="table-wrap"><table><thead><tr><th>Used item</th><th>Category</th><th>Condition</th><th>Accepted value</th><th>Status</th><th></th></tr></thead><tbody>
+{% for x in rows %}<tr><td><strong>{{ x.item_name }}</strong><small class="cell-sub">Top-Up #{{ x.transaction_id }}</small></td><td>{{ x.get_item_category_display }}</td><td>{{ x.condition|default:'—' }}</td><td>{{ x.buying_price|money }}</td><td><span class="badge {% if x.status == 'available' %}completed{% else %}voided{% endif %}">{{ x.get_status_display }}</span></td><td>{% if x.status == 'available' %}<a href="{% url 'kilasi_trade:used_sale_new' x.pk %}" class="btn btn-primary btn-sm">Sell used item</a> <a href="{% url 'kilasi_trade:used_stock_edit' x.pk %}" class="btn btn-secondary btn-sm">Edit</a>{% else %}Sold{% endif %}</td></tr>
+{% empty %}<tr><td colspan="6" class="empty">No used items.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

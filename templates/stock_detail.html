@@ -1,0 +1,444 @@
+{% extends 'base.html' %}
+{% load mfp %}
+
+{% block page_title %}
+{{ product.name }} Stock
+{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+
+    <div>
+        <h1>{{ product.name }}</h1>
+
+        <p>
+            Complete stock history, buying prices
+            and FIFO batches.
+        </p>
+    </div>
+
+    <div class="head-actions">
+
+        <a
+            href="{% url 'stock' %}"
+            class="btn btn-secondary"
+        >
+            Back to stock
+        </a>
+
+        <a
+            href="{% url 'purchase_create' %}"
+            class="btn btn-primary"
+        >
+            Receive stock
+        </a>
+
+    </div>
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- SUMMARY                                                   -->
+<!-- ========================================================= -->
+
+<div class="stock-detail-summary">
+
+    <section class="card stock-stat-card">
+
+        <span class="stock-stat-label">
+            Available
+        </span>
+
+        <strong class="stock-stat-value">
+            {{ current_qty|qty }}
+        </strong>
+
+        <small>
+            {{ product.base_unit }}
+        </small>
+
+    </section>
+
+
+    <section class="card stock-stat-card">
+
+        <span class="stock-stat-label">
+            Average buying
+        </span>
+
+        <strong class="stock-stat-value">
+            {{ average_buying_cost|money }}
+        </strong>
+
+        <small>
+            TZS / {{ product.base_unit }}
+        </small>
+
+    </section>
+
+
+    <section class="card stock-stat-card">
+
+        <span class="stock-stat-label">
+            Stock value
+        </span>
+
+        <strong class="stock-stat-value">
+            {{ current_value|money }}
+        </strong>
+
+        <small>
+            TZS
+        </small>
+
+    </section>
+
+
+    <section class="card stock-stat-card">
+
+        <span class="stock-stat-label">
+            Alert level
+        </span>
+
+        <strong class="stock-stat-value">
+            {{ product.low_stock_level|qty }}
+        </strong>
+
+        <small>
+            {{ product.base_unit }}
+        </small>
+
+    </section>
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- PRODUCT INFO                                              -->
+<!-- ========================================================= -->
+
+<section class="card section-gap">
+
+    <div class="card-head">
+
+        <div>
+            <h2>Product information</h2>
+
+            <p>
+                Category and current selling units.
+            </p>
+        </div>
+
+    </div>
+
+    <div class="stock-product-info">
+
+        <div>
+            <span>Product</span>
+            <strong>
+                {{ product.name }}
+            </strong>
+        </div>
+
+        <div>
+            <span>Category</span>
+            <strong>
+                {{ product.category.name }}
+            </strong>
+        </div>
+
+        <div>
+            <span>Base unit</span>
+            <strong>
+                {{ product.base_unit }}
+            </strong>
+        </div>
+
+        <div>
+            <span>Status</span>
+
+            <strong>
+                {% if product.is_active %}
+                    Active
+                {% else %}
+                    Inactive
+                {% endif %}
+            </strong>
+        </div>
+
+    </div>
+
+
+    <div class="stock-selling-units">
+
+        <span class="stock-stat-label">
+            Selling units
+        </span>
+
+        <div class="stock-unit-list">
+
+            {% for unit in selling_units %}
+
+                <div class="stock-unit-item">
+
+                    <div>
+                        <strong>
+                            {{ unit.name }}
+                        </strong>
+
+                        <small>
+                            {{ unit.symbol }}
+                        </small>
+                    </div>
+
+                    <div class="align-right">
+
+                        <strong>
+                            {{ unit.selling_price|money }}
+                        </strong>
+
+                        <small>
+                            TZS
+                        </small>
+
+                    </div>
+
+                </div>
+
+            {% empty %}
+
+                <span class="muted-text">
+                    No selling units.
+                </span>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ========================================================= -->
+<!-- FIFO HISTORY                                              -->
+<!-- ========================================================= -->
+
+<section class="card section-gap">
+
+    <div class="card-head">
+
+        <div>
+            <h2>FIFO stock history</h2>
+
+            <p>
+                Every receipt keeps its own original
+                buying price and remaining stock.
+            </p>
+        </div>
+
+    </div>
+
+
+    <div class="stock-cost-note">
+
+        <strong>Buying-price correction</strong>
+
+        <p>
+            You can change the buying price only while
+            that batch is completely untouched. Once any
+            quantity has been sold or consumed, the cost
+            is locked to protect historical profit.
+        </p>
+
+    </div>
+
+
+    <div class="table-wrap">
+
+        <table class="stock-history-table">
+
+            <thead>
+
+                <tr>
+                    <th>Date</th>
+                    <th>Source</th>
+                    <th>Received</th>
+                    <th>Used</th>
+                    <th>Remaining</th>
+                    <th>Buying price</th>
+                    <th>Cost / base</th>
+                    <th>Remaining value</th>
+                    <th>Reference</th>
+                    <th class="align-right">
+                        Action
+                    </th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for b in batches %}
+
+                <tr>
+
+                    <td>
+
+                        {{ b.received_at|date:'d M Y' }}
+
+                        <small class="cell-sub">
+                            {{ b.received_at|date:'H:i' }}
+                        </small>
+
+                    </td>
+
+
+                    <td>
+
+                        <strong>
+                            {{ b.get_source_display }}
+                        </strong>
+
+                        {% if b.purchase_item_id %}
+
+                            <small class="cell-sub">
+                                {{ b.purchase_reference }}
+                            </small>
+
+                        {% endif %}
+
+                    </td>
+
+
+                    <td>
+
+                        <strong>
+                            {{ b.received_display_qty|qty }}
+                        </strong>
+
+                        {{ b.received_display_unit }}
+
+                    </td>
+
+
+                    <td>
+
+                        {{ b.used_quantity|qty }}
+                        {{ product.base_unit }}
+
+                    </td>
+
+
+                    <td>
+
+                        <strong>
+                            {{ b.quantity_remaining_base|qty }}
+                        </strong>
+
+                        {{ product.base_unit }}
+
+                    </td>
+
+
+                    <td>
+
+                        <strong class="stock-cost-number">
+                            {{ b.display_buying_price|money }}
+                        </strong>
+
+                        <small class="cell-sub">
+                            TZS / {{ b.display_buying_unit }}
+                        </small>
+
+                    </td>
+
+
+                    <td>
+
+                        {{ b.unit_cost_base|money }}
+
+                        <small class="cell-sub">
+                            TZS / {{ product.base_unit }}
+                        </small>
+
+                    </td>
+
+
+                    <td>
+
+                        <strong>
+                            {{ b.remaining_value|money }}
+                        </strong>
+
+                        <small class="cell-sub">
+                            TZS
+                        </small>
+
+                    </td>
+
+
+                    <td>
+
+                        {{ b.reference|default:'-' }}
+
+                    </td>
+
+
+                    <td class="align-right">
+
+                        {% if b.can_edit_cost %}
+
+                            <a
+                                href="{% url 'stock_batch_cost_edit' b.id %}"
+                                class="btn btn-secondary btn-sm"
+                            >
+                                Edit buying price
+                            </a>
+
+                        {% else %}
+
+                            <div class="stock-locked-wrap">
+
+                                <span class="stock-cost-locked">
+                                    Locked
+                                </span>
+
+                                <small>
+                                    Stock already used
+                                </small>
+
+                            </div>
+
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+
+                {% empty %}
+
+                <tr>
+
+                    <td
+                        colspan="10"
+                        class="empty"
+                    >
+                        This product has no stock history yet.
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</section>
+
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}{{ doc.number }}{% endblock %}
+{% block content %}
+<div class="page-head kb-screen-only"><div><h1>{{ doc.number }}</h1><p>Proforma quotation · {{ branch.name }} · {{ doc.get_status_display }}</p></div><div class="head-actions">
+{% if doc.status == 'draft' %}<a class="btn btn-secondary" href="{% url 'billing:proforma_edit' doc.pk %}">Edit</a><form method="post" action="{% url 'billing:proforma_status' doc.pk %}">{% csrf_token %}<input type="hidden" name="action" value="issue"><button class="btn btn-primary">Issue proforma</button></form>{% endif %}
+{% if doc.status != 'cancelled' %}<form method="post" action="{% url 'billing:proforma_status' doc.pk %}">{% csrf_token %}<input type="hidden" name="action" value="cancel"><button class="btn btn-danger-soft">Cancel proforma</button></form>{% endif %}
+<button class="btn btn-secondary" type="button" onclick="window.print()">Print A4</button><a class="btn btn-secondary" href="{% url 'billing:proformas' %}">Back</a></div></div>
+<article class="kb-paper"><div class="kb-paper-top"><div class="kb-company">{% if shop.logo %}<img src="{{ shop.logo.url }}" alt="" class="kb-logo">{% endif %}<strong>{{ shop.name }}</strong><small>{{ shop.address }}{% if shop.phone %} · {{ shop.phone }}{% endif %}</small></div><div class="kb-paper-title"><h2>PROFORMA INVOICE</h2><strong>{{ doc.number }}</strong><small>{{ doc.issue_date|date:'d M Y' }}</small></div></div>
+{% if doc.status == 'cancelled' %}<div class="kb-warning">CANCELLED — INVALID QUOTATION</div>{% elif doc.status == 'draft' %}<div class="kb-warning">DRAFT — NOT YET ISSUED</div>{% endif %}
+<div class="kb-meta"><div><small>Prepared for</small><strong>{{ doc.customer_name }}</strong><span>{{ doc.customer_phone }}</span><span>{{ doc.customer_address }}</span></div><div><small>Branch</small><strong>{{ branch.name }}</strong><span>Valid until: {{ doc.valid_until|date:'d M Y'|default:'Not specified' }}</span></div></div>
+<div class="table-wrap"><table class="kb-document-table"><thead><tr><th>#</th><th>Description</th><th>Qty</th><th>Unit</th><th>Unit price</th><th>Discount</th><th>Total</th></tr></thead><tbody>{% for line in doc.lines.all %}<tr><td>{{ forloop.counter }}</td><td>{{ line.description }}</td><td>{{ line.quantity|qty }}</td><td>{{ line.unit }}</td><td>{{ line.unit_price|money }}</td><td>{{ line.discount|money }}</td><td>{{ line.total|money }}</td></tr>{% endfor %}</tbody></table></div>
+<div class="kb-total"><span>Total quoted amount</span><strong>{{ doc.total|money }} TZS</strong></div>
+{% if doc.notes %}<div class="kb-notes"><strong>Notes</strong><p>{{ doc.notes|linebreaksbr }}</p></div>{% endif %}
+<p class="kb-legal">This document is a quotation only. It is not a sale, receipt or fiscal invoice. Stock and revenue are not affected.</p></article>
+{% endblock %}

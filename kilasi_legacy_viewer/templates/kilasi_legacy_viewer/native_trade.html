@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% load mfp %}
+{% block title %}Genji &amp; Top-Up · KILASI V2{% endblock %}
+{% block page_title %}Genji &amp; Top-Up{% endblock %}
+{% block content %}
+<div class="ki-native">
+  <div class="page-head"><div><h1>Genji &amp; Top-Up</h1><p>Original Kilasi trade history and Stage 7A Genji in the same V2 workspace.</p></div><div class="head-actions"><span class="ki-stage-tag">HISTORICAL · READ ONLY</span><a class="btn btn-secondary" href="/legacy/">Original archive</a></div></div>
+  <div class="novman-stat-grid"><article class="novman-stat"><label>Original Genji records</label><strong>{{ genji_total }}</strong><small>640 staged · 7 held for date review</small></article><article class="novman-stat"><label>Top-Up exchanges</label><strong>{{ topups }}</strong></article><article class="novman-stat"><label>Used item receipts</label><strong>{{ used_stock }}</strong></article><article class="novman-stat"><label>Available used items</label><strong>{{ used_available }}</strong></article><article class="novman-stat"><label>Used item resales</label><strong>{{ used_sales }}</strong></article><article class="novman-stat"><label>Cash added on exchanges · TZS</label><strong>{{ addon|money }}</strong><small>Historical cash component, not full revenue</small></article></div>
+  <div class="alert ki-note">Historical Top-Up stock deductions were already reflected in the 383 staged stock units. Do not deduct them again. Exchange profit cannot be finalized without complete original cost allocations.</div>
+  <div class="ki-actions"><a href="/legacy/genji/" class="btn btn-primary">Genji history</a><a href="/trade/topup/" class="btn btn-secondary">Top-Up exchanges</a><a href="/trade/used-stock/" class="btn btn-secondary">Used stock</a></div>
+</div>
+{% endblock %}

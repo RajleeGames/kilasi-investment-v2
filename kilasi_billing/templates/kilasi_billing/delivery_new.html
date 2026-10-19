@@ -1,0 +1,7 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}Issue delivery note{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Issue delivery note</h1><p>Source receipt {{ sale.receipt_no }} · {{ branch.name }}. This represents the entire sale, not a partial shipment.</p></div><a class="btn btn-secondary" href="{% url 'sale_detail' sale.pk %}">Back</a></div>
+<section class="card"><div class="card-head"><h2>Items to be delivered</h2></div><div class="table-wrap"><table><thead><tr><th>Product</th><th>Quantity</th><th>Unit</th></tr></thead><tbody>{% for line in sale.items.all %}<tr><td>{{ line.product.name }}</td><td>{{ line.quantity|qty }}</td><td>{{ line.unit.symbol }}</td></tr>{% endfor %}</tbody></table></div></section>
+<form method="post" class="card section-gap">{% csrf_token %}<div class="card-head"><h2>Delivery details</h2></div><div class="form-body">{{ form.non_field_errors }}<div class="form-grid two"><label>Recipient{{ form.delivered_to }}{{ form.delivered_to.errors }}</label><label>Date{{ form.issue_date }}{{ form.issue_date.errors }}</label></div><label>Delivery address{{ form.delivery_address }}{{ form.delivery_address.errors }}</label><label>Driver or vehicle{{ form.vehicle_or_driver }}{{ form.vehicle_or_driver.errors }}</label><label>Notes{{ form.notes }}{{ form.notes.errors }}</label><div class="form-actions"><button class="btn btn-primary">Issue delivery note</button></div></div></form>
+{% endblock %}

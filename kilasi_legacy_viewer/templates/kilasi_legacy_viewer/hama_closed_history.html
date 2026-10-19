@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% load mfp %}
+{% block title %}Closed HAMA trips · KILASI V2{% endblock %}
+{% block content %}
+<div class="ki-native">
+  <div class="page-head"><div><h1>HAMA NA KILASI · Closed trip history</h1><p>Previous business period archived. New Transport jobs start fresh; HAMA is independent of Retail branches.</p></div><div class="head-actions"><span class="ki-stage-tag">HISTORICAL · CLOSED</span><a class="btn btn-secondary" href="/transport/">Transport overview</a></div></div>
+  <div class="novman-stat-grid ki-native-grid">
+    <article class="novman-stat"><label>Archived trips</label><strong>{{ stats.trips }}</strong></article>
+    <article class="novman-stat"><label>Bookings in history</label><strong>{{ stats.bookings }}</strong></article>
+    <article class="novman-stat"><label>Transport expenses in history</label><strong>{{ stats.expenses }}</strong></article>
+    <article class="novman-stat"><label>New operational trips</label><strong>See Transport</strong><small>Old trips were not copied into new jobs</small></article>
+  </div>
+  <div class="alert ki-note"><strong>Owner closeout:</strong> no Transport receivables are carried into the new business period. Historical trip charges are not confirmed cash collections. Original source statuses are preserved, including pending/in-transit and cancelled rows. New Transport transactions are not enabled in this read-only staging viewer.</div>
+  <div class="card ki-section">
+    <div class="ki-section-head"><h2>All original HAMA trip records</h2><p>Originally completed: {{ statuses.completed|default:0 }} · In transit: {{ statuses.in_transit|default:0 }} · Pending: {{ statuses.pending|default:0 }} · Cancelled: {{ statuses.cancelled|default:0 }}</p></div>
+    <form method="get" class="novman-filters ki-filter">
+      <label>Trip # / customer / route / vehicle<input class="form-control" type="search" name="q" value="{{ q }}" maxlength="80" placeholder="Search historical trips"></label>
+      <label>Original status<select name="status" class="form-control"><option value="">All statuses</option>{% for v in choices %}<option value="{{ v }}" {% if status == v %}selected{% endif %}>{{ v|capfirst }}</option>{% endfor %}</select></label>
+      <button type="submit" class="btn btn-primary">Filter</button><a class="btn btn-secondary" href="?">Clear</a>
+    </form>
+    <div class="table-wrap ki-table-wrap"><table><thead><tr><th>Old trip #</th><th>Date</th><th>Customer</th><th>Origin</th><th>Destination</th><th>Vehicle</th><th>Original status</th><th>New period</th><th>Charged · TZS</th></tr></thead><tbody>{% for r in rows %}<tr><td>{{ r.id }}</td><td>{{ r.date }}</td><td>{{ r.customer }}</td><td>{{ r.origin }}</td><td>{{ r.destination }}</td><td>{{ r.vehicle }}</td><td>{{ r.old_status }}</td><td>{% if r.disposition == 'CANCELLED_ARCHIVE' %}Cancelled archive{% else %}Closed archive{% endif %}</td><td>{{ r.original_charge|money }}</td></tr>{% empty %}<tr><td colspan="9" class="empty">No trips match your search.</td></tr>{% endfor %}</tbody></table></div>
+    <div class="ki-pager"><span>{{ total }} matching records · Page {{ page }} / {{ pages }}</span><div>{% if prev %}<a class="btn btn-secondary btn-sm" href="?q={{ q|urlencode }}&amp;status={{ status|urlencode }}&amp;page={{ prev }}">Previous</a>{% endif %}{% if next %}<a class="btn btn-secondary btn-sm" href="?q={{ q|urlencode }}&amp;status={{ status|urlencode }}&amp;page={{ next }}">Next</a>{% endif %}</div></div>
+  </div>
+  <p class="ki-muted">Previous HAMA records are permanently preserved in the private Stage7B archive. No SMS is sent; no old trip payment or receivable was invented.</p>
+</div>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% load mfp %}
+{% block title %}Historical records · KILASI V2{% endblock %}
+{% block page_title %}Historical Records{% endblock %}
+{% block content %}
+<div class="ki-native">
+  <div class="page-head"><div><h1>Historical records</h1><p>Original Kilasi records, presented using the standard V2 design. All archive entries are read-only.</p></div><div class="head-actions"><span class="ki-stage-tag">HISTORICAL · READ ONLY</span><a href="/" class="btn btn-secondary">Retail dashboard</a></div></div>
+  <div class="alert ki-note"><strong>Accounting safety:</strong> Retail invoices were staged into V2 in Phase 7E, but old Transport trip charges are not verified cash collections. Stock history is not replayed. SMS history is never resent.</div>
+  <div class="novman-stat-grid ki-native-grid">
+  {% for label, count, slug in cards %}
+    <a class="novman-stat ki-stat-link" href="{% url 'kilasi_legacy_viewer:records' slug %}"><label>{{ label }}</label><strong>{{ count }}</strong><small>View original records →</small></a>
+  {% endfor %}
+  </div>
+  <section class="card ki-section"><div class="ki-section-head"><h2>Continue in Kilasi V2</h2><p>Department pages use the same sidebar, cards and form controls as the rest of the system.</p></div>
+    <div class="ki-actions"><a href="/sales/" class="btn btn-primary">Retail sales</a><a href="/trade/" class="btn btn-secondary">Genji &amp; Top-Up</a><a href="/transport/" class="btn btn-secondary">HAMA NA KILASI</a><a href="/sms/history/" class="btn btn-secondary">SMS history</a></div>
+  </section>
+</div>
+{% endblock %}

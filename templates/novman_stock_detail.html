@@ -1,0 +1,10 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}Stock Detail{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ product.name }}</h1><p>{{ branch.name }} · Product ID {{ product.id }} · {{ product.barcode|default:'No barcode' }}</p></div><a class="btn btn-secondary" href="{% url 'stock' %}">Back</a></div>
+<section class="novman-stat-grid"><div class="novman-stat"><label>Branch quantity</label><strong>{{ current_qty|qty }}</strong></div><div class="novman-stat"><label>Buying stock value</label><strong>{{ current_value|money }} TZS</strong></div><div class="novman-stat"><label>Average cost</label><strong>{{ average_buying_cost|money }} TZS</strong></div></section>
+<section class="card"><div class="card-head"><h2>FIFO batches (this branch)</h2></div><div class="table-wrap"><table><thead><tr><th>Reference</th><th>Date</th><th>Initial qty</th><th>Remaining</th><th>Unit cost</th><th>Remaining value</th><th>Change cost</th></tr></thead><tbody>
+{% for b in batches %}<tr><td>{{ b.reference }}</td><td>{{ b.received_at|date:'d M Y H:i' }}</td><td>{{ b.quantity_received_base|qty }}</td><td>{{ b.quantity_remaining_base|qty }}</td><td>{{ b.unit_cost_base|money }}</td><td>{{ b.remaining_value|money }}</td><td>{% if b.can_edit_cost and not b.legacy_novman_id and b.source == 'OPENING' %}<form method="post" action="{% url 'stock_batch_cost_edit' b.id %}" class="novman-filters">{% csrf_token %}<input type="number" name="cost" class="form-control novman-cost-input" min="0" step="0.01" value="{{ b.unit_cost_base }}" required><button class="btn btn-secondary btn-sm">Save</button></form>{% else %}Locked{% endif %}</td></tr>
+{% empty %}<tr><td colspan="7" class="empty">No batches in this branch.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

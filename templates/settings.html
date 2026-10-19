@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block page_title %}Settings{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Business settings</h1>
+    <p>Business identity, logo and receipt details.</p>
+  </div>
+</div>
+
+<div class="novman-settings-branch-link"><a href="{% url 'branch_manage' %}" class="btn btn-secondary">Manage branches</a></div>
+<section class="card settings-card">
+  <form method="post" enctype="multipart/form-data" class="settings-form">
+    {% csrf_token %}
+
+    <div class="settings-logo-row">
+      <div class="settings-logo-preview" id="logoPreview">
+        {% if shop.logo %}<img src="{{ shop.logo.url }}" alt="Current logo">{% else %}<span>KI</span>{% endif %}
+      </div>
+      <div class="settings-logo-copy">
+        <h2>Business logo</h2>
+        <p>Used automatically on the login screen, sidebar and receipt.</p>
+        {{ form.logo }}
+        {% if form.logo.errors %}<div class="field-error">{{ form.logo.errors|striptags }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="form-divider"></div>
+
+    <div class="form-grid two">
+      <label>Business name{{ form.name }}</label>
+      <label>Phone{{ form.phone }}</label>
+    </div>
+    <label>Address{{ form.address }}</label>
+    <div class="form-grid two">
+      <label>Currency{{ form.currency }}</label>
+      <label>Default low-stock level{{ form.low_stock_default }}</label>
+    </div>
+    <label>Receipt footer{{ form.receipt_footer }}</label>
+
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Save settings</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

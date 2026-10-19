@@ -1,0 +1,55 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}{{ stocktake.reference }}{% endblock %}
+{% block content %}
+<div class="page-head stocktake-head">
+  <div><h1>{{ stocktake.reference }}</h1><p>{{ stocktake.count_date|date:'d M Y' }} · {{ stocktake.get_status_display }} · Started by {{ stocktake.created_by.get_full_name|default:stocktake.created_by.username }}</p></div>
+  <div class="head-actions"><a class="btn btn-secondary" href="{% url 'stocktakes' %}">All stocktakes</a>{% if stocktake.status == 'posted' %}<a class="btn btn-secondary" href="{% url 'stock' %}">Current stock</a>{% endif %}</div>
+</div>
+
+<div class="stocktake-summary-strip">
+  <div><span>Products</span><strong>{{ lines|length }}</strong></div>
+  <div><span>Counted</span><strong>{{ counted_lines }}</strong></div>
+  <div><span>Variance lines</span><strong>{{ variance_lines }}</strong></div>
+  <div><span>Status</span><strong>{{ stocktake.get_status_display }}</strong></div>
+</div>
+
+{% if stocktake.status == 'draft' %}
+<form method="post" id="stocktakeForm" class="stocktake-form">
+  {% csrf_token %}
+  <section class="card section-gap">
+    <div class="card-head stocktake-table-head"><div><h2>Physical count</h2><p>Count in the easiest unit. Mega Fish Point converts it back to base stock automatically.</p></div><button class="btn btn-secondary btn-sm" id="fillSystemCounts" type="button">Set all to system</button></div>
+    <div class="stocktake-note-row"><label>Stocktake notes<input class="form-control" name="notes" maxlength="240" value="{{ stocktake.notes }}" placeholder="Optional note for this count"></label></div>
+    <div class="table-wrap stocktake-table-wrap"><table class="stocktake-table"><thead><tr><th>Product</th><th>System stock</th><th>Count unit</th><th>Physical count</th><th>Difference</th></tr></thead><tbody>
+      {% for line in lines %}
+      <tr data-stocktake-row data-system="{{ line.system_qty_base }}" data-base-unit="{{ line.product.base_unit }}">
+        <td><span class="table-primary">{{ line.product.name }}</span><span class="cell-sub">{{ line.product.category.name }}</span></td>
+        <td><strong>{{ line.system_qty_base|qty }} {{ line.product.base_unit }}</strong></td>
+        <td>
+          <select class="form-control stocktake-unit-select" name="unit_{{ line.id }}">
+            {% for option in line.unit_options %}<option value="{{ option.value }}" data-conversion="{{ option.conversion }}" {% if option.value == line.selected_unit_value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
+          </select>
+        </td>
+        <td><input class="form-control stocktake-count-input" type="number" step="any" min="0" inputmode="decimal" name="counted_{{ line.id }}" value="{% if line.counted_input_qty != None %}{{ line.counted_input_qty }}{% endif %}" placeholder="Count"></td>
+        <td><span class="stocktake-diff {% if line.difference_base < 0 %}negative{% elif line.difference_base > 0 %}positive{% endif %}" data-stocktake-diff>{% if line.counted_qty_base != None %}{{ line.difference_base|qty }} {{ line.product.base_unit }}{% else %}—{% endif %}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody></table></div>
+  </section>
+
+  <div class="stocktake-actions section-gap">
+    <button class="btn btn-secondary" type="submit" name="action" value="save">Save draft</button>
+    <button class="btn btn-secondary" type="submit" name="action" value="refresh">Refresh system quantities</button>
+    <button class="btn btn-danger-soft" type="submit" name="action" value="cancel">Cancel stocktake</button>
+    <button class="btn btn-primary" type="submit" name="action" value="post">Post stocktake</button>
+  </div>
+  <p class="stocktake-post-note">Posting creates audited stock adjustments. If sales changed stock while you were counting, the system will stop and ask you to refresh first.</p>
+</form>
+{% else %}
+<section class="card section-gap">
+  <div class="card-head"><div><h2>{% if stocktake.status == 'posted' %}Posted count{% else %}Cancelled stocktake{% endif %}</h2><p>{% if stocktake.posted_at %}Posted {{ stocktake.posted_at|date:'d M Y, H:i' }} by {{ stocktake.posted_by.get_full_name|default:stocktake.posted_by.username }}{% else %}No stock changes were posted.{% endif %}</p></div></div>
+  <div class="table-wrap"><table><thead><tr><th>Product</th><th>System stock</th><th>Physical count</th><th>Count unit</th><th>Difference</th><th>Adjustment</th></tr></thead><tbody>
+    {% for line in lines %}<tr><td><span class="table-primary">{{ line.product.name }}</span></td><td>{{ line.system_qty_base|qty }} {{ line.product.base_unit }}</td><td>{% if line.counted_qty_base != None %}{{ line.counted_qty_base|qty }} {{ line.product.base_unit }}{% else %}—{% endif %}</td><td>{% if line.counted_input_qty != None %}{{ line.counted_input_qty|qty }} {{ line.count_unit_symbol }}{% else %}—{% endif %}</td><td><span class="stocktake-diff {% if line.difference_base < 0 %}negative{% elif line.difference_base > 0 %}positive{% endif %}">{{ line.difference_base|qty }} {{ line.product.base_unit }}</span></td><td>{% if line.adjustment %}{{ line.adjustment.get_adjustment_type_display }} · {{ line.adjustment.quantity_base|qty }}{% else %}No change{% endif %}</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+{% endif %}
+{% endblock %}

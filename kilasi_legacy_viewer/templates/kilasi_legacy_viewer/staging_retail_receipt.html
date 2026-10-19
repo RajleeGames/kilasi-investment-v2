@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% load mfp %}
+{% block title %}Receipt {{ sale.receipt_no }} · KILASI V2{% endblock %}
+{% block page_title %}Historical Receipt{% endblock %}
+{% block content %}
+<div class="ki-native">
+  <div class="page-head"><div><h1>{{ sale.receipt_no }}</h1><p>{{ sale.sold_at|date:'d M Y H:i' }} · {{ sale.branch.name }} · {{ sale.get_status_display }}</p></div><div class="head-actions"><span class="ki-stage-tag">HISTORICAL · READ ONLY</span><a href="/sales/" class="btn btn-secondary">Sales History</a></div></div>
+  <div class="novman-stat-grid"><article class="novman-stat"><label>Amount · TZS</label><strong>{{ sale.grand_total|money }}</strong></article><article class="novman-stat"><label>Cost snapshot · TZS</label><strong>{{ sale.cogs_total|money }}</strong></article><article class="novman-stat"><label>Gross profit · TZS</label><strong>{{ sale.profit_total|money }}</strong></article></div>
+  <div class="alert ki-note">Original cashier was preserved as historical ID only. Imported receipts cannot be edited or voided in this local staging viewer. Stock remains unchanged.</div>
+  <section class="card ki-section"><div class="ki-section-head"><h2>Line items</h2></div><div class="table-wrap ki-table-wrap"><table><thead><tr><th>Product</th><th>Quantity</th><th>Unit</th><th>Unit price</th><th>Total</th><th>Cost</th></tr></thead><tbody>{% for item in items %}<tr><td>{{ item.product.name }}</td><td>{{ item.quantity }}</td><td>{{ item.unit.symbol|default:item.unit.name }}</td><td>{{ item.normal_unit_price|money }}</td><td>{{ item.final_total|money }}</td><td>{{ item.cost_total|money }}</td></tr>{% empty %}<tr><td colspan="6" class="empty">No receipt lines in original data.</td></tr>{% endfor %}</tbody></table></div></section>
+</div>
+{% endblock %}

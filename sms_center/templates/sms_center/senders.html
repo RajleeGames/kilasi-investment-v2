@@ -1,0 +1,12 @@
+{% extends "sms_center/shell.html" %}
+{% block title %}SMS Sender IDs · {{ shop.name }}{% endblock %}
+{% block page_title %}Sender IDs{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Sender IDs</h1><p>Only add sender names already approved for your Beem account.</p></div><a class="btn btn-primary" href="{% url 'sms_center:sender_create' %}">Add Sender ID</a></div>
+{% include "sms_center/_nav.html" %}
+<div class="card sms-provider-note"><strong>Environment sender</strong><span>{{ environment_sender|default:"Not configured" }}</span><p>The environment sender is always available when Beem is configured. Saved profiles let you choose among multiple approved sender IDs.</p></div>
+<div class="sms-card-grid section-gap">
+{% for sender in senders %}<article class="card sms-sender-card"><span class="sms-eyebrow">{% if sender.is_default %}DEFAULT{% else %}SENDER{% endif %}</span><h2>{{ sender.sender_id }}</h2><p>{{ sender.label|default:"Approved SMS sender" }}</p><div class="sms-card-foot"><span>{% if sender.is_active %}Active{% else %}Inactive{% endif %}</span><div><a class="text-link" href="{% url 'sms_center:sender_edit' sender.pk %}">Edit</a><a class="sms-danger-link" href="{% url 'sms_center:sender_delete' sender.pk %}">Delete</a></div></div></article>
+{% empty %}<div class="card sms-empty-card">No saved Sender IDs. The environment sender can still be used.</div>{% endfor %}
+</div>
+{% endblock %}

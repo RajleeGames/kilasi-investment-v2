@@ -1,0 +1,656 @@
+{% extends 'base.html' %}
+{% load mfp %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+    <div>
+        <h1>{{ title }}</h1>
+        <p>
+            Keep physical stock separate from the selling units customers use.
+        </p>
+    </div>
+
+    <a href="{% url 'products' %}" class="btn btn-secondary">
+        Back
+    </a>
+</div>
+
+
+<div class="content-grid {% if product %}two-one{% endif %}">
+
+    <!-- =========================================================
+         PRODUCT DETAILS
+         ========================================================= -->
+    <section class="card form-section-card">
+
+        <div class="card-head">
+            <div>
+                <h2>Product details</h2>
+                <p>
+                    The base unit is the physical stock unit used for all calculations.
+                </p>
+            </div>
+        </div>
+
+        <form method="post" class="form-body" novalidate>
+            {% csrf_token %}
+
+            <input type="hidden" name="action" value="product">
+
+
+            <!-- PRODUCT NON-FIELD ERRORS -->
+            {% if form.non_field_errors %}
+                <div class="alert error">
+                    {% for error in form.non_field_errors %}
+                        <div>{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+
+<div class="form-grid two">
+              <div class="form-group"><label>Barcode</label>{{ form.barcode }}{% if form.barcode.errors %}<span class="field-error">{{ form.barcode.errors|striptags }}</span>{% endif %}</div>
+              <div class="form-group"><label>Supplier</label>{{ form.supplier }}{% if form.supplier.errors %}<span class="field-error">{{ form.supplier.errors|striptags }}</span>{% endif %}</div>
+            </div>
+            <!-- PRODUCT NAME -->
+            <div class="form-group {% if form.name.errors %}has-error{% endif %}">
+                <label for="{{ form.name.id_for_label }}">
+                    Product name
+                </label>
+
+                {{ form.name }}
+
+                {% if form.name.errors %}
+                    <div class="field-error-box">
+                        <div class="field-error-icon">!</div>
+
+                        <div class="field-error-content">
+                            <strong>Check product name</strong>
+
+                            {% for error in form.name.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% elif form.name.help_text %}
+                    <span class="field-note">
+                        {{ form.name.help_text }}
+                    </span>
+                {% endif %}
+            </div>
+
+
+            <div class="form-grid two">
+
+                <!-- RETAIL DIVISION — KILASI_V2_PHASE2_RETAIL -->
+                <div class="form-group {% if form.retail_division.errors %}has-error{% endif %}">
+                    <label for="{{ form.retail_division.id_for_label }}">Retail division</label>
+                    {{ form.retail_division }}
+                    {% if form.retail_division.errors %}
+                    <span class="field-error">{{ form.retail_division.errors|striptags }}</span>
+                    {% else %}<span class="field-note">Furniture, Electronics or Magodoro; category is a more detailed grouping.</span>{% endif %}
+                </div>
+
+                <!-- CATEGORY -->
+                <div class="form-group {% if form.category.errors %}has-error{% endif %}">
+                    <label for="{{ form.category.id_for_label }}">
+                        Category
+                    </label>
+
+                    {{ form.category }}
+
+                    {% if form.category.errors %}
+                        <div class="field-error-box">
+                            <div class="field-error-icon">!</div>
+
+                            <div class="field-error-content">
+                                <strong>Check category</strong>
+
+                                {% for error in form.category.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+
+                <!-- BASE UNIT -->
+                <div class="form-group {% if form.base_unit.errors %}has-error{% endif %}">
+                    <label for="{{ form.base_unit.id_for_label }}">
+                        Base unit
+                    </label>
+
+                    {{ form.base_unit }}
+
+                    {% if base_unit_locked %}
+                        <span class="field-note">
+                            Locked because stock or transaction history already exists.
+                        </span>
+                    {% elif form.base_unit.help_text %}
+                        <span class="field-note">
+                            {{ form.base_unit.help_text }}
+                        </span>
+                    {% endif %}
+
+                    {% if form.base_unit.errors %}
+                        <div class="field-error-box">
+                            <div class="field-error-icon">!</div>
+
+                            <div class="field-error-content">
+                                <strong>Check base unit</strong>
+
+                                {% for error in form.base_unit.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+            </div>
+
+
+            <!-- LOW STOCK -->
+            <div class="form-group {% if form.low_stock_level.errors %}has-error{% endif %}">
+                <label for="{{ form.low_stock_level.id_for_label }}">
+                    Low stock level
+                </label>
+
+                {{ form.low_stock_level }}
+
+                {% if form.low_stock_level.errors %}
+                    <div class="field-error-box">
+                        <div class="field-error-icon">!</div>
+
+                        <div class="field-error-content">
+                            <strong>Check low stock level</strong>
+
+                            {% for error in form.low_stock_level.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+
+            <!-- PRODUCT ACTIVE -->
+            <label class="toggle-row">
+                <span>
+                    <span class="toggle-title">
+                        Active product
+                    </span>
+
+                    <small>
+                        Available for new stock and sales.
+                    </small>
+                </span>
+
+                {{ form.is_active }}
+            </label>
+
+            {% if form.is_active.errors %}
+                <div class="field-error-box">
+                    <div class="field-error-icon">!</div>
+
+                    <div class="field-error-content">
+                        {% for error in form.is_active.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+
+            <div class="form-actions">
+                <button class="btn btn-primary" type="submit">
+                    Save product
+                </button>
+            </div>
+
+        </form>
+    </section>
+
+
+    {% if product %}
+
+    <!-- =========================================================
+         ADD SELLING UNIT
+         ========================================================= -->
+    <section class="card form-section-card">
+
+        <div class="card-head">
+            <div>
+                <h2>Add selling unit</h2>
+
+                <p>
+                    Examples: Tray = 30 PCS, Half litre = 500 ML.
+                </p>
+            </div>
+        </div>
+
+
+        <form method="post" class="form-body" novalidate>
+            {% csrf_token %}
+
+            <input type="hidden" name="action" value="unit">
+
+
+            <!-- SELLING UNIT NON-FIELD ERRORS -->
+            {% if unit_form.non_field_errors %}
+                <div class="alert error">
+                    {% for error in unit_form.non_field_errors %}
+                        <div>{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+
+            <div class="form-grid two">
+
+                <!-- UNIT NAME -->
+                <div class="form-group {% if unit_form.name.errors %}has-error{% endif %}">
+                    <label for="{{ unit_form.name.id_for_label }}">
+                        Unit name
+                    </label>
+
+                    {{ unit_form.name }}
+
+                    {% if unit_form.name.errors %}
+                        <div class="field-error-box">
+                            <div class="field-error-icon">!</div>
+
+                            <div class="field-error-content">
+                                <strong>Check unit name</strong>
+
+                                {% for error in unit_form.name.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                    {% elif unit_form.name.help_text %}
+
+                        <span class="field-note">
+                            {{ unit_form.name.help_text }}
+                        </span>
+
+                    {% endif %}
+                </div>
+
+
+                <!-- UNIT SYMBOL -->
+                <div class="form-group {% if unit_form.symbol.errors %}has-error{% endif %}">
+                    <label for="{{ unit_form.symbol.id_for_label }}">
+                        Symbol
+                    </label>
+
+                    {{ unit_form.symbol }}
+
+                    {% if unit_form.symbol.errors %}
+                        <div class="field-error-box">
+                            <div class="field-error-icon">!</div>
+
+                            <div class="field-error-content">
+                                <strong>Check symbol</strong>
+
+                                {% for error in unit_form.symbol.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                    {% elif unit_form.symbol.help_text %}
+
+                        <span class="field-note">
+                            {{ unit_form.symbol.help_text }}
+                        </span>
+
+                    {% endif %}
+                </div>
+
+            </div>
+
+
+            <!-- CONVERSION -->
+            <div class="form-group {% if unit_form.conversion_to_base.errors %}has-error{% endif %}">
+                <label for="{{ unit_form.conversion_to_base.id_for_label }}">
+                    Conversion to base
+                </label>
+
+                {{ unit_form.conversion_to_base }}
+
+                {% if unit_form.conversion_to_base.errors %}
+                    <div class="field-error-box">
+                        <div class="field-error-icon">!</div>
+
+                        <div class="field-error-content">
+                            <strong>Check conversion</strong>
+
+                            {% for error in unit_form.conversion_to_base.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                {% else %}
+
+                    <span class="field-note">
+                        How much base stock one of this unit removes.
+                        Example: if base stock is KG, 0.5 means half a kilogram.
+                    </span>
+
+                {% endif %}
+            </div>
+
+
+            <!-- SELLING PRICE -->
+            <div class="form-group {% if unit_form.selling_price.errors %}has-error{% endif %}">
+                <label for="{{ unit_form.selling_price.id_for_label }}">
+                    Selling price
+                </label>
+
+                {{ unit_form.selling_price }}
+
+                {% if unit_form.selling_price.errors %}
+                    <div class="field-error-box">
+                        <div class="field-error-icon">!</div>
+
+                        <div class="field-error-content">
+                            <strong>Check selling price</strong>
+
+                            {% for error in unit_form.selling_price.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                {% elif unit_form.selling_price.help_text %}
+
+                    <span class="field-note">
+                        {{ unit_form.selling_price.help_text }}
+                    </span>
+
+                {% endif %}
+            </div>
+
+
+            <div class="toggle-stack">
+
+                <!-- DEFAULT UNIT -->
+                <label class="toggle-row">
+                    <span>
+                        <span class="toggle-title">
+                            Default unit
+                        </span>
+
+                        <small>
+                            Selected first on POS.
+                        </small>
+                    </span>
+
+                    {{ unit_form.is_default }}
+                </label>
+
+
+                <!-- ACTIVE UNIT -->
+                <label class="toggle-row">
+                    <span>
+                        <span class="toggle-title">
+                            Active unit
+                        </span>
+
+                        <small>
+                            Can be used for new sales.
+                        </small>
+                    </span>
+
+                    {{ unit_form.is_active }}
+                </label>
+
+            </div>
+
+
+            {% if unit_form.is_default.errors or unit_form.is_active.errors %}
+                <div class="field-error-box">
+                    <div class="field-error-icon">!</div>
+
+                    <div class="field-error-content">
+
+                        {% for error in unit_form.is_default.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+
+                        {% for error in unit_form.is_active.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+
+                    </div>
+                </div>
+            {% endif %}
+
+
+            <div class="form-actions">
+                <button class="btn btn-primary" type="submit">
+                    Add selling unit
+                </button>
+            </div>
+
+        </form>
+
+    </section>
+
+    {% endif %}
+
+</div>
+
+
+{% if product %}
+
+<!-- =============================================================
+     EXISTING SELLING UNITS
+     ============================================================= -->
+<section class="card section-gap">
+
+    <div class="card-head">
+        <div>
+            <h2>Selling units &amp; prices</h2>
+
+            <p>
+                Change selling prices anytime.
+                If a unit already has transaction history, its conversion is protected.
+            </p>
+        </div>
+    </div>
+
+
+    <div class="table-wrap">
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Symbol</th>
+                    <th>Base conversion</th>
+                    <th>Selling price</th>
+                    <th>Default</th>
+                    <th>Active</th>
+                    <th class="align-right">Actions</th>
+                </tr>
+            </thead>
+
+
+            <tbody>
+
+                {% for u in product.selling_units.all %}
+
+                <tr>
+
+                    <!-- UNIT NAME -->
+                    <td>
+
+                        <!--
+                            Form is placed inside a valid table cell.
+                            Other controls reference it using form="..."
+                        -->
+                        <form
+                            method="post"
+                            action="{% url 'unit_update' u.id %}"
+                            id="unit-form-{{ u.id }}"
+                        >
+                            {% csrf_token %}
+                        </form>
+
+                        <input
+                            class="table-input"
+                            type="text"
+                            name="name"
+                            value="{{ u.name }}"
+                            form="unit-form-{{ u.id }}"
+                            required
+                        >
+
+                    </td>
+
+
+                    <!-- SYMBOL -->
+                    <td>
+
+                        <input
+                            class="table-input"
+                            type="text"
+                            name="symbol"
+                            value="{{ u.symbol }}"
+                            form="unit-form-{{ u.id }}"
+                            required
+                        >
+
+                    </td>
+
+
+                    <!-- CONVERSION -->
+                    <td>
+
+                        <input
+                            class="table-input"
+                            type="number"
+                            name="conversion_to_base"
+                            inputmode="decimal"
+                            step="0.001"
+                            min="0.001"
+                            value="{{ u.conversion_to_base|qty }}"
+                            form="unit-form-{{ u.id }}"
+                            required
+                        >
+
+                    </td>
+
+
+                    <!-- PRICE -->
+                    <td>
+
+                        <input
+                            class="table-input"
+                            type="number"
+                            name="selling_price"
+                            inputmode="decimal"
+                            step="0.01"
+                            min="0"
+                            value="{{ u.selling_price|qty }}"
+                            form="unit-form-{{ u.id }}"
+                            required
+                        >
+
+                    </td>
+
+
+                    <!-- DEFAULT -->
+                    <td>
+
+                        <input
+                            class="table-check"
+                            type="checkbox"
+                            name="is_default"
+                            {% if u.is_default %}checked{% endif %}
+                            form="unit-form-{{ u.id }}"
+                        >
+
+                    </td>
+
+
+                    <!-- ACTIVE -->
+                    <td>
+
+                        <input
+                            class="table-check"
+                            type="checkbox"
+                            name="is_active"
+                            {% if u.is_active %}checked{% endif %}
+                            form="unit-form-{{ u.id }}"
+                        >
+
+                    </td>
+
+
+                    <!-- ACTIONS -->
+                    <td>
+
+                        <div class="row-actions">
+
+                            <button
+                                class="btn btn-secondary btn-sm"
+                                type="submit"
+                                form="unit-form-{{ u.id }}"
+                            >
+                                Save
+                            </button>
+
+
+                            <button
+                                class="btn btn-danger-soft btn-sm"
+                                type="button"
+
+                                data-confirm-url="{% url 'unit_delete' u.id %}"
+
+                                data-confirm-title="Delete {{ u.name }}?"
+
+                                data-confirm-text="Used selling units are archived instead of deleted so old purchases and sales remain correct."
+
+                                data-confirm-label="Delete / archive"
+                            >
+                                Delete
+                            </button>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+
+                {% empty %}
+
+                <tr>
+                    <td colspan="7" class="empty">
+                        No selling units yet.
+                    </td>
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</section>
+
+{% endif %}
+
+{% endblock %}

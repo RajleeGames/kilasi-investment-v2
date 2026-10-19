@@ -1,0 +1,271 @@
+{% extends 'base.html' %}
+{% load mfp %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-head dashboard-head">
+  <div>
+    <h1>Business overview</h1>
+    <p>Sales, profit, expenses, stock and activity for the selected period.</p>
+  </div>
+  <div class="head-actions">
+    <a class="btn btn-secondary" href="{% url 'purchases' %}">Purchases</a>
+    <a class="btn btn-primary" href="{% url 'pos' %}">New sale</a>
+  </div>
+</div>
+
+<section class="dashboard-filter-bar" aria-label="Dashboard date filter">
+  <div class="dashboard-filter-summary">
+    <span>Viewing</span>
+    <strong>{{ period_label }}</strong>
+    <small>{{ period_subtitle }}</small>
+  </div>
+
+  <div class="dashboard-filter-quick" aria-label="Quick date ranges">
+    <a
+      href="?start={{ today_iso }}&amp;end={{ today_iso }}"
+      class="dashboard-filter-chip {% if is_today_filter %}active{% endif %}"
+    >Today</a>
+
+    <a
+      href="?start={{ last_7_start }}&amp;end={{ today_iso }}"
+      class="dashboard-filter-chip {% if is_last_7_filter %}active{% endif %}"
+    >Last 7 days</a>
+
+    <a
+      href="?start={{ month_start }}&amp;end={{ today_iso }}"
+      class="dashboard-filter-chip {% if is_month_filter %}active{% endif %}"
+    >This month</a>
+  </div>
+
+  <form method="get" class="dashboard-filter-form">
+    <label class="dashboard-date-field">
+      <span>From</span>
+      <input type="date" name="start" value="{{ filter_start }}" max="{{ today_iso }}">
+    </label>
+
+    <span class="dashboard-date-separator" aria-hidden="true">→</span>
+
+    <label class="dashboard-date-field">
+      <span>To</span>
+      <input type="date" name="end" value="{{ filter_end }}" max="{{ today_iso }}">
+    </label>
+
+    <button class="btn btn-primary dashboard-filter-apply" type="submit">
+      Apply
+    </button>
+  </form>
+</section>
+
+<div class="dashboard-kpi-grid">
+  <article class="dashboard-kpi">
+    <div class="dashboard-kpi-top"><span>{% if is_today_filter %}Sales today{% else %}Sales{% endif %}</span><span class="kpi-mini">{{ today_sales }} sales</span></div>
+    <div class="dashboard-kpi-value">{{ revenue|money }} <small>TZS</small></div>
+    <div class="dashboard-kpi-foot">{{ revenue_compare }}</div>
+  </article>
+
+  <article class="dashboard-kpi">
+    <div class="dashboard-kpi-top"><span>Gross profit</span><span class="kpi-mini">{{ margin_pct|floatformat:1 }}% margin</span></div>
+    <div class="dashboard-kpi-value">{{ gross_profit|money }} <small>TZS</small></div>
+    <div class="dashboard-kpi-foot">{{ profit_compare }}</div>
+  </article>
+
+  <article class="dashboard-kpi">
+    <div class="dashboard-kpi-top"><span>{% if is_today_filter %}Net today{% else %}Net profit{% endif %}</span><span class="kpi-mini">After expenses</span></div>
+    <div class="dashboard-kpi-value">{{ net_today|money }} <small>TZS</small></div>
+    <div class="dashboard-kpi-foot">Expenses {{ expenses_today|money }} TZS</div>
+  </article>
+
+  <article class="dashboard-kpi dashboard-debt-kpi">
+    <div class="dashboard-kpi-top"><span>Outstanding debt</span><span class="kpi-mini">{{ debtor_count }} debtors</span></div>
+    <div class="dashboard-kpi-value">{{ outstanding_debt|money }} <small>TZS</small></div>
+    <div class="dashboard-kpi-foot"><a href="{% url 'debts' %}" class="text-link">Current customer balances</a></div>
+  </article>
+
+  <article class="dashboard-kpi">
+    <div class="dashboard-kpi-top"><span>Average sale</span><span class="kpi-mini">Per receipt</span></div>
+    <div class="dashboard-kpi-value">{{ average_sale|money }} <small>TZS</small></div>
+    <div class="dashboard-kpi-foot">{{ voided_today }} voided in period</div>
+  </article>
+
+  <article class="dashboard-kpi">
+    <div class="dashboard-kpi-top"><span>Stock value</span><span class="kpi-mini">{{ active_products }} products</span></div>
+    <div class="dashboard-kpi-value">{{ stock_value|money }} <small>TZS</small></div>
+    <div class="dashboard-kpi-foot">{{ low_stock_count }} low · {{ out_of_stock_count }} out of stock</div>
+  </article>
+</div>
+
+<div class="dashboard-strip">
+  <div><span>{% if is_today_filter %}COGS today{% else %}COGS{% endif %}</span><strong>{{ cogs_today|money }} TZS</strong></div>
+  <div><span>Discounts given</span><strong>{{ discounts_today|money }} TZS</strong></div>
+  <div><span>{% if is_today_filter %}Purchases today{% else %}Purchases{% endif %}</span><strong>{{ purchases_today|money }} TZS</strong></div>
+  <div><span>{% if is_today_filter %}Expenses today{% else %}Expenses{% endif %}</span><strong>{{ expenses_today|money }} TZS</strong></div>
+  <div><span>Debt sales</span><strong>{{ debt_sales_period|money }} TZS</strong></div>
+  <div><span>Debt collected</span><strong>{{ debt_collected_period|money }} TZS</strong></div>
+</div>
+
+<div class="dashboard-chart-grid">
+  <section class="card dashboard-chart-card dashboard-trend-card">
+    <div class="card-head dashboard-card-head">
+      <div>
+        <h2>{% if is_today_filter %}Today’s performance{% else %}Performance trend{% endif %}</h2>
+        <p>Revenue, gross profit and expenses · {{ period_label }}.</p>
+      </div>
+      <div class="chart-key" aria-label="Chart legend">
+        <span><i class="chart-key-dot revenue"></i>Sales</span>
+        <span><i class="chart-key-dot profit"></i>Profit</span>
+        <span><i class="chart-key-dot expense"></i>Expenses</span>
+      </div>
+    </div>
+    <div class="chart-canvas-wrap">
+      <canvas id="salesTrendChart" aria-label="Sales performance chart for selected period"></canvas>
+
+      <div class="dashboard-chart-tooltip" id="salesTrendTooltip" aria-hidden="true">
+        <div class="dashboard-chart-tooltip-date" data-tooltip-date></div>
+        <div class="dashboard-chart-tooltip-rows">
+          <div><span><i class="tooltip-dot revenue"></i>Sales</span><strong data-tooltip-sales>0 TZS</strong></div>
+          <div><span><i class="tooltip-dot profit"></i>Gross profit</span><strong data-tooltip-profit>0 TZS</strong></div>
+          <div><span><i class="tooltip-dot expense"></i>Expenses</span><strong data-tooltip-expenses>0 TZS</strong></div>
+          <div class="tooltip-net-row"><span>Net profit</span><strong data-tooltip-net>0 TZS</strong></div>
+        </div>
+      </div>
+
+      <div class="chart-empty hidden" id="salesTrendEmpty">No sales or expenses for this period.</div>
+    </div>
+  </section>
+
+  <section class="card dashboard-chart-card payment-card">
+    <div class="card-head dashboard-card-head">
+      <div>
+        <h2>Payment mix</h2>
+        <p>Completed sales · {{ period_label }}.</p>
+      </div>
+    </div>
+    <div class="payment-chart-body">
+      <div class="donut-wrap">
+        <canvas id="paymentDonutChart" aria-label="Payment method donut chart"></canvas>
+        <div class="donut-center"><span>{% if is_today_filter %}Today{% else %}Period{% endif %}</span><strong>{{ revenue|money }}</strong><small>TZS</small></div>
+      </div>
+      <div class="payment-legend">
+        {% for row in payment_summary %}
+        <div class="payment-legend-row">
+          <span class="payment-label"><i class="payment-dot payment-{{ row.key }}"></i>{{ row.label }}</span>
+          <span class="payment-value"><strong>{{ row.amount|money }}</strong><small>{{ row.count }} sale{{ row.count|pluralize }}</small></span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="dashboard-detail-grid section-gap">
+  <section class="card">
+    <div class="card-head dashboard-card-head">
+      <div>
+        <h2>Top products</h2>
+        <p>Best performers by revenue · {{ period_label }}.</p>
+      </div>
+    </div>
+    <div class="rank-list">
+      {% for row in top_products %}
+      <div class="rank-row">
+        <div class="rank-copy">
+          <span>{{ row.product__name }}</span>
+          <small>{{ row.quantity|qty }} {{ row.product__base_unit }} sold</small>
+        </div>
+        <div class="rank-right">
+          <strong>{{ row.revenue|money }} TZS</strong>
+          <div class="rank-track"><i style="width:{{ row.percent|floatformat:0 }}%"></i></div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="empty-block">No completed sales for this period.</div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head dashboard-card-head">
+      <div>
+        <h2>Stock by category</h2>
+        <p>Current inventory value using remaining FIFO batch cost.</p>
+      </div>
+      <a href="{% url 'stock' %}" class="text-link">View stock</a>
+    </div>
+    <div class="rank-list category-rank-list">
+      {% for row in category_stock %}
+      <div class="rank-row">
+        <div class="rank-copy">
+          <span>{{ row.name }}</span>
+          <small>{{ row.products }} product{{ row.products|pluralize }}</small>
+        </div>
+        <div class="rank-right">
+          <strong>{{ row.value|money }} TZS</strong>
+          <div class="rank-track category"><i style="width:{{ row.percent|floatformat:0 }}%"></i></div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="empty-block">No active stock categories yet.</div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+<div class="content-grid two-one section-gap dashboard-bottom-grid">
+  <section class="card">
+    <div class="card-head dashboard-card-head">
+      <div>
+        <h2>Recent sales</h2>
+        <p>Latest transactions · {{ period_label }}.</p>
+      </div>
+      <a href="{% url 'sales' %}" class="text-link">View all</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Receipt</th><th>Cashier</th><th>Time</th><th>Payment</th><th>Amount</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for s in recent_sales %}
+          <tr>
+            <td><a href="{% url 'sale_detail' s.id %}" class="table-link">{{ s.receipt_no }}</a></td>
+            <td>{{ s.cashier.get_full_name|default:s.cashier.username }}</td>
+            <td>{{ s.sold_at|date:'d M, H:i' }}</td>
+            <td>{{ s.get_payment_method_display }}</td>
+            <td>{{ s.grand_total|money }}</td>
+            <td><span class="badge {{ s.status }}">{{ s.get_status_display }}</span></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="empty">No sales yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head dashboard-card-head">
+      <div>
+        <h2>Stock attention</h2>
+        <p>Products at or below their alert level.</p>
+      </div>
+      <a href="{% url 'stock' %}" class="text-link">Manage</a>
+    </div>
+    <div class="stock-mini dashboard-stock-mini">
+      {% for p in low_products %}
+      <div>
+        <span>
+          <strong>{{ p.name }}</strong>
+          <small>{{ p.category.name }} · Alert {{ p.low_stock_level|qty }} {{ p.base_unit }}</small>
+        </span>
+        <b class="{% if p.dashboard_stock_qty <= 0 %}stock-zero{% endif %}">{{ p.dashboard_stock_qty|qty }} {{ p.base_unit }}</b>
+      </div>
+      {% empty %}
+      <div class="empty-block">No low-stock products.</div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ dashboard_chart_data|json_script:"dashboard-data" }}
+{% endblock %}

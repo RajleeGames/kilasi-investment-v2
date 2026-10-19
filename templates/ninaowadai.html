@@ -1,0 +1,434 @@
+{% extends 'base.html' %}{% load mfp %}
+
+{% block title %}Ninaowadai | {{ shop.name }}{% endblock %}
+{% block page_title %}Ninaowadai{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <h1>Ninaowadai</h1>
+    <p>People who owe the owner money, separate from normal business debts.</p>
+  </div>
+</div>
+
+<div class="kpi-grid">
+
+  <div class="kpi-card">
+    <span>Outstanding</span>
+    <strong>{{ total_outstanding|money }} <small>TZS</small></strong>
+    <em>Still to collect</em>
+  </div>
+
+  <div class="kpi-card">
+    <span>Original Amount</span>
+    <strong>{{ total_original|money }} <small>TZS</small></strong>
+    <em>Total recorded</em>
+  </div>
+
+  <div class="kpi-card">
+    <span>Collected</span>
+    <strong>{{ total_paid|money }} <small>TZS</small></strong>
+    <em>Payments received</em>
+  </div>
+
+  <div class="kpi-card">
+    <span>Open Records</span>
+    <strong>{{ open_count }}</strong>
+    <em>Still owing</em>
+  </div>
+
+</div>
+
+
+<div class="content-grid one-two">
+
+  <!-- ADD -->
+  <section class="card form-section-card">
+
+    <div class="card-head">
+      <div>
+        <h2>Add Record</h2>
+        <p>Enter someone who owes money.</p>
+      </div>
+    </div>
+
+    <form method="post" class="form-body">
+      {% csrf_token %}
+
+      <label>
+        Name
+        <input
+          class="form-control"
+          type="text"
+          name="name"
+          maxlength="120"
+          placeholder="Person name"
+          required
+        >
+      </label>
+
+      <label>
+        Phone
+        <input
+          class="form-control"
+          type="text"
+          name="phone"
+          maxlength="40"
+          placeholder="Optional"
+        >
+      </label>
+
+      <label>
+        Amount Owed
+        <input
+          class="form-control"
+          type="number"
+          name="amount_owed"
+          min="0.01"
+          step="0.01"
+          placeholder="0"
+          required
+        >
+      </label>
+
+      <div class="form-grid two">
+
+        <label>
+          Date Owed
+          <input
+            class="form-control"
+            type="date"
+            name="owed_date"
+            value="{{ today|date:'Y-m-d' }}"
+          >
+        </label>
+
+        <label>
+          Due Date
+          <input
+            class="form-control"
+            type="date"
+            name="due_date"
+          >
+        </label>
+
+      </div>
+
+      <label>
+        Notes
+        <textarea
+          class="form-control"
+          name="notes"
+          rows="3"
+          maxlength="240"
+          placeholder="Optional note..."
+        ></textarea>
+      </label>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">
+          Add Record
+        </button>
+      </div>
+
+    </form>
+
+  </section>
+
+
+  <!-- RECORDS -->
+  <section class="card">
+
+    <div class="card-head">
+      <div>
+        <h2>People Who Owe Me</h2>
+        <p>Manual balances and payments.</p>
+      </div>
+    </div>
+
+    <div class="card compact">
+
+      <form method="get" class="toolbar">
+
+        <div class="inline-search product-search">
+
+          <input
+            class="form-control"
+            type="search"
+            name="q"
+            value="{{ q }}"
+            placeholder="Search name or phone..."
+          >
+
+          <button class="btn btn-secondary" type="submit">
+            Search
+          </button>
+
+        </div>
+
+        <div class="head-actions">
+
+          <a
+            href="?show=open{% if q %}&q={{ q|urlencode }}{% endif %}"
+            class="btn btn-sm {% if show == 'open' %}btn-primary{% else %}btn-secondary{% endif %}"
+          >
+            Open
+          </a>
+
+          <a
+            href="?show=paid{% if q %}&q={{ q|urlencode }}{% endif %}"
+            class="btn btn-sm {% if show == 'paid' %}btn-primary{% else %}btn-secondary{% endif %}"
+          >
+            Paid
+          </a>
+
+          <a
+            href="?show=all{% if q %}&q={{ q|urlencode }}{% endif %}"
+            class="btn btn-sm {% if show == 'all' %}btn-primary{% else %}btn-secondary{% endif %}"
+          >
+            All
+          </a>
+
+        </div>
+
+      </form>
+
+    </div>
+
+
+    <div class="table-wrap">
+
+      <table>
+
+        <thead>
+          <tr>
+            <th>Person</th>
+            <th>Original</th>
+            <th>Paid</th>
+            <th>Balance</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th class="align-right">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          {% for item in records %}
+
+          <tr>
+
+            <td>
+              <span class="table-primary">{{ item.name }}</span>
+
+              {% if item.phone %}
+              <span class="cell-sub">{{ item.phone }}</span>
+              {% endif %}
+
+              {% if item.notes %}
+              <span class="cell-sub">{{ item.notes }}</span>
+              {% endif %}
+            </td>
+
+            <td>{{ item.amount_owed|money }}</td>
+
+            <td>{{ item.dashboard_paid|money }}</td>
+
+            <td>
+              <strong>{{ item.dashboard_balance|money }}</strong>
+            </td>
+
+            <td>
+              {{ item.owed_date|date:"d M Y" }}
+
+              {% if item.due_date %}
+              <span class="cell-sub">
+                Due {{ item.due_date|date:"d M Y" }}
+              </span>
+              {% endif %}
+            </td>
+
+            <td>
+              {% if item.dashboard_balance > 0 %}
+                <span class="badge low">Owing</span>
+              {% else %}
+                <span class="badge completed">Paid</span>
+              {% endif %}
+            </td>
+
+            <td>
+
+              <div class="row-actions">
+
+                {% if item.dashboard_balance > 0 %}
+
+                <button
+                  type="button"
+                  class="btn btn-primary btn-sm"
+                  data-receivable-payment-url="{% url 'ninaowadai_payment_create' item.pk %}"
+                  data-receivable-name="{{ item.name|escape }}"
+                  data-receivable-balance="{{ item.dashboard_balance }}"
+                >
+                  Payment
+                </button>
+
+                {% endif %}
+
+                <button
+                  type="button"
+                  class="btn btn-danger-soft btn-sm"
+                  data-confirm-url="{% url 'ninaowadai_delete' item.pk %}"
+                  data-confirm-title="Delete record?"
+                  data-confirm-text="Delete {{ item.name|escape }} from Ninaowadai?"
+                  data-confirm-label="Delete"
+                >
+                  Delete
+                </button>
+
+              </div>
+
+            </td>
+
+          </tr>
+
+          {% empty %}
+
+          <tr>
+            <td colspan="7" class="empty">
+              No records found.
+            </td>
+          </tr>
+
+          {% endfor %}
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </section>
+
+</div>
+
+
+<!-- PAYMENT MODAL -->
+<div
+  class="modal"
+  id="receivablePaymentModal"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="receivablePaymentTitle"
+>
+
+  <div class="modal-card modal-small">
+
+    <div class="modal-head">
+
+      <div>
+        <h2 id="receivablePaymentTitle">Record Payment</h2>
+        <p id="receivablePaymentName">Record money received.</p>
+      </div>
+
+      <button
+        class="modal-close"
+        type="button"
+        data-close-modal="receivablePaymentModal"
+        aria-label="Close"
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <form
+      method="post"
+      id="receivablePaymentForm"
+      class="modal-form stack-form"
+    >
+      {% csrf_token %}
+
+      <div class="modal-total">
+        <span>Remaining balance</span>
+        <strong id="receivablePaymentBalance">0 TZS</strong>
+      </div>
+
+      <label>
+        Amount Received
+        <input
+          class="form-control"
+          type="number"
+          name="amount"
+          id="receivablePaymentAmount"
+          min="0.01"
+          step="0.01"
+          placeholder="0"
+          required
+        >
+      </label>
+
+      <label>
+        Payment Method
+        <select
+          class="form-control"
+          name="method"
+          required
+        >
+          {% for value, label in payment_methods %}
+          <option value="{{ value }}">
+            {{ label }}
+          </option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>
+        Reference
+        <input
+          class="form-control"
+          type="text"
+          name="reference"
+          maxlength="100"
+          placeholder="Optional"
+        >
+      </label>
+
+      <label>
+        Notes
+        <input
+          class="form-control"
+          type="text"
+          name="notes"
+          maxlength="180"
+          placeholder="Optional"
+        >
+      </label>
+
+      <div class="modal-actions">
+
+        <button
+          type="button"
+          class="btn btn-secondary"
+          data-close-modal="receivablePaymentModal"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          class="btn btn-primary"
+        >
+          Save Payment
+        </button>
+
+      </div>
+
+    </form>
+
+  </div>
+
+</div>
+
+{% endblock %}

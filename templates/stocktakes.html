@@ -1,0 +1,23 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}Stocktake{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Stocktake</h1><p>Compare physical stock with Msumari jr store and post only the real differences.</p></div></div>
+<div class="content-grid one-two stocktake-create-grid">
+  <section class="card stocktake-new-card">
+    <div class="card-head"><div><h2>New stocktake</h2><p>Create a frozen system snapshot before counting.</p></div></div>
+    <form method="post" class="form-body">
+      {% csrf_token %}
+      <label>Count date<input class="form-control" type="date" name="count_date" value="{{ today|date:'Y-m-d' }}" max="{{ today|date:'Y-m-d' }}" required></label>
+      <label>Notes<textarea class="form-control" name="notes" rows="3" maxlength="240" placeholder="Example: Full freezer count"></textarea></label>
+      <button class="btn btn-primary btn-block" type="submit">Start stocktake</button>
+    </form>
+  </section>
+  <section class="card">
+    <div class="card-head"><div><h2>Stocktake history</h2><p>Drafts can be resumed. Posted counts remain as audit history.</p></div></div>
+    <div class="table-wrap"><table><thead><tr><th>Reference</th><th>Date</th><th>Status</th><th>Products</th><th>Variance lines</th><th>Created by</th><th></th></tr></thead><tbody>
+      {% for st in stocktakes %}<tr><td><a class="table-link" href="{% url 'stocktake_detail' st.id %}">{{ st.reference }}</a></td><td>{{ st.count_date|date:'d M Y' }}</td><td><span class="badge {% if st.status == 'posted' %}completed{% elif st.status == 'cancelled' %}voided{% else %}low{% endif %}">{{ st.get_status_display }}</span></td><td>{{ st.lines.count }}</td><td>{{ st.total_variance_lines }}</td><td>{{ st.created_by.get_full_name|default:st.created_by.username }}</td><td class="align-right"><a class="btn btn-secondary btn-sm" href="{% url 'stocktake_detail' st.id %}">{% if st.status == 'draft' %}Continue{% else %}View{% endif %}</a></td></tr>
+      {% empty %}<tr><td colspan="7" class="empty">No stocktakes yet.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </section>
+</div>
+{% endblock %}

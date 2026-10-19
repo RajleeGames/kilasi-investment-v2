@@ -1,0 +1,15 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}Genji &amp; Top-Up{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Genji &amp; Top-Up</h1><p>{{ branch.name }} · Separate retail trade records; not counted a second time in normal POS.</p></div>
+<div class="head-actions"><a class="btn btn-secondary" href="{% url 'kilasi_trade:genji_new' %}">New Genji</a><a class="btn btn-primary" href="{% url 'kilasi_trade:topup_new' %}">New Top-Up</a></div></div>
+<div class="dashboard-kpi-grid nv-dashboard-kpis">
+<article class="dashboard-kpi"><div class="dashboard-kpi-top"><span>Genji sales</span><span class="kpi-mini">{{ genji_count }} records</span></div><div class="dashboard-kpi-value">{{ genji_revenue|money }} <small>TZS</small></div><div class="dashboard-kpi-foot">Genji profit: {{ genji_profit|money }}</div></article>
+<article class="dashboard-kpi"><div class="dashboard-kpi-top"><span>Top-Up cash added</span><span class="kpi-mini">{{ topup_count }} exchanges</span></div><div class="dashboard-kpi-value">{{ exchange_cash|money }} <small>TZS</small></div><div class="dashboard-kpi-foot">Accepted used-item value: {{ exchange_value|money }}</div></article>
+<article class="dashboard-kpi"><div class="dashboard-kpi-top"><span>Exchange margin</span></div><div class="dashboard-kpi-value">{{ exchange_profit|money }} <small>TZS</small></div><div class="dashboard-kpi-foot">Consideration minus outgoing FIFO stock cost</div></article>
+<article class="dashboard-kpi"><div class="dashboard-kpi-top"><span>Used items available</span></div><div class="dashboard-kpi-value">{{ used_available }}</div><div class="dashboard-kpi-foot">Received from completed exchanges</div></article>
+<article class="dashboard-kpi"><div class="dashboard-kpi-top"><span>Used-item resale</span></div><div class="dashboard-kpi-value">{{ used_revenue|money }} <small>TZS</small></div><div class="dashboard-kpi-foot">Resale profit: {{ used_profit|money }}</div></article>
+<article class="dashboard-kpi"><div class="dashboard-kpi-top"><span>Combined Genji + exchange + resale margin</span></div><div class="dashboard-kpi-value">{{ total_trade_profit|money }} <small>TZS</small></div><div class="dashboard-kpi-foot">Separate from POS dashboard until consolidated reporting is built</div></article>
+</div>
+<section class="card section-gap"><div class="card-head"><div><h2>Trade management</h2><p>Manage by department and selected branch.</p></div></div><div class="form-body"><div class="head-actions"><a class="btn btn-secondary" href="{% url 'kilasi_trade:genji_list' %}">Genji history</a><a class="btn btn-secondary" href="{% url 'kilasi_trade:topup_list' %}">Top-Up history</a><a class="btn btn-secondary" href="{% url 'kilasi_trade:used_stock' %}">Used-stock inventory</a></div></div></section>
+{% endblock %}

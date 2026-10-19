@@ -1,0 +1,9 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}Top-Up{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Top-Up / Exchange history</h1><p>{{ branch.name }} · Each exchange reduces normal stock once and receives one used item.</p></div><div class="head-actions"><a href="{% url 'kilasi_trade:overview' %}" class="btn btn-secondary">Overview</a><a href="{% url 'kilasi_trade:topup_new' %}" class="btn btn-primary">New exchange</a></div></div>
+<form class="novman-filters" method="get"><label>Search<input class="form-control" type="search" name="q" value="{{ q }}" placeholder="New product, used item, customer"></label><button class="btn btn-primary">Search</button></form>
+<section class="card"><div class="table-wrap"><table><thead><tr><th>Top-Up / Customer</th><th>New item out</th><th>Used item in</th><th>Used value</th><th>Cash added</th><th>Outgoing FIFO cost</th><th>Margin</th></tr></thead><tbody>
+{% for x in rows %}<tr><td><strong>#{{ x.pk }}</strong><small class="cell-sub">{{ x.customer_name|default:'Walk-in' }}</small></td><td>{{ x.new_product.name }} × {{ x.new_product_qty|qty }}</td><td>{{ x.used_item_name }}</td><td>{{ x.used_item_buying_price|money }}</td><td>{{ x.addon_amount|money }}</td><td>{{ x.outgoing_cogs|money }}</td><td>{{ x.exchange_profit|money }}</td></tr>
+{% empty %}<tr><td colspan="7" class="empty">No Top-Up transactions yet.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

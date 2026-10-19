@@ -1,0 +1,11 @@
+{% extends "sms_center/shell.html" %}
+{% block title %}SMS Templates · {{ shop.name }}{% endblock %}
+{% block page_title %}SMS Templates{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Message templates</h1><p>Reusable promotions, reminders and customer messages.</p></div><a class="btn btn-primary" href="{% url 'sms_center:template_create' %}">New template</a></div>
+{% include "sms_center/_nav.html" %}
+<div class="sms-card-grid">
+{% for template in templates %}<article class="card sms-template-card"><div><span class="sms-eyebrow">{{ template.category|default:"GENERAL" }}</span><h2>{{ template.name }}</h2><p>{{ template.body }}</p></div><div class="sms-card-foot"><span>{% if template.is_active %}Active{% else %}Inactive{% endif %}</span><div><a class="text-link" href="{% url 'sms_center:send' %}?template={{ template.pk }}">Use</a><a class="text-link" href="{% url 'sms_center:template_edit' template.pk %}">Edit</a><a class="sms-danger-link" href="{% url 'sms_center:template_delete' template.pk %}">Delete</a></div></div></article>
+{% empty %}<div class="card sms-empty-card">No templates yet.</div>{% endfor %}
+</div>
+{% endblock %}

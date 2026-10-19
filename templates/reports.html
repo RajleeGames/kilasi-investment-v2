@@ -1,0 +1,17 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}Reports{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Performance report</h1><p>Revenue, FIFO cost, discounts, expenses, debts and real net profit.</p></div><div class="head-actions"><a class="btn btn-secondary" href="{% url 'data_tools' %}?start={{ start }}&amp;end={{ end }}">Export</a><form class="date-filter" method="get"><input class="form-control" type="date" name="start" value="{{ start }}"><span>to</span><input class="form-control" type="date" name="end" value="{{ end }}"><button class="btn btn-secondary">Apply</button></form></div></div>
+<div class="kpi-grid report-kpi-grid">
+<div class="kpi-card"><span>Revenue</span><strong>{{ revenue|money }} <small>TZS</small></strong><em>{{ sales_count }} sales</em></div>
+<div class="kpi-card"><span>COGS</span><strong>{{ cogs|money }} <small>TZS</small></strong><em>FIFO stock cost</em></div>
+<div class="kpi-card"><span>Gross profit</span><strong>{{ gross|money }} <small>TZS</small></strong><em>Revenue − COGS</em></div>
+<div class="kpi-card"><span>Expenses</span><strong>{{ expenses_total|money }} <small>TZS</small></strong><em>Selected period</em></div>
+<div class="kpi-card"><span>Net profit</span><strong>{{ net|money }} <small>TZS</small></strong><em>Gross profit − expenses</em></div>
+<div class="kpi-card"><span>Discounts</span><strong>{{ discounts|money }} <small>TZS</small></strong><em>Item + bill discount</em></div>
+<div class="kpi-card"><span>Debt sales</span><strong>{{ debt_sales|money }} <small>TZS</small></strong><em>Credit sales in period</em></div>
+<div class="kpi-card"><span>Debt collected</span><strong>{{ debt_collected|money }} <small>TZS</small></strong><em>Repayments in period</em></div>
+<div class="kpi-card"><span>Outstanding debt</span><strong>{{ outstanding_debt|money }} <small>TZS</small></strong><em>Current balance</em></div>
+</div>
+<section class="card"><div class="card-head"><div><h2>Top sold products</h2><p>Amount is after item-level discount, before shared bill discount.</p></div></div><div class="table-wrap"><table><thead><tr><th>Product</th><th>Base quantity sold</th><th>Sales amount</th></tr></thead><tbody>{% for row in top_items %}<tr><td>{{ row.items__product__name }}</td><td>{{ row.qty|qty }}</td><td>{{ row.amount|money }} TZS</td></tr>{% empty %}<tr><td colspan="3" class="empty">No sales in this period.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

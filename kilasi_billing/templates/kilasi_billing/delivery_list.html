@@ -1,0 +1,6 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}Delivery notes{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Delivery notes</h1><p>Proof-of-delivery documents linked to existing sales · {{ branch.name }}.</p></div><a class="btn btn-primary" href="{% url 'billing:home' %}">Select sale</a></div>
+<section class="card"><div class="table-wrap"><table><thead><tr><th>Number</th><th>Source receipt</th><th>Recipient</th><th>Issue date</th><th>Driver / vehicle</th><th></th></tr></thead><tbody>{% for d in rows %}<tr><td><a class="table-link" href="{% url 'billing:delivery_detail' d.pk %}">{{ d.number }}</a></td><td>{{ d.sale.receipt_no }}</td><td>{{ d.delivered_to }}</td><td>{{ d.issue_date|date:'d M Y' }}</td><td>{{ d.vehicle_or_driver|default:'—' }}</td><td><a class="btn btn-secondary btn-sm" href="{% url 'billing:delivery_detail' d.pk %}">View</a></td></tr>{% empty %}<tr><td colspan="6" class="empty">No delivery notes issued yet.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

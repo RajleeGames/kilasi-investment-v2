@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% load mfp %}
+{% block title %}Migration Reconciliation · Kilasi V2{% endblock %}
+{% block page_title %}Financial Reconciliation{% endblock %}
+{% block content %}
+<div class="ki-native">
+  <div class="page-head"><div><h1>Migration reconciliation</h1><p>Phase 7G · Historical HAMA NA KILASI &amp; Retail finances · One consistent Kilasi V2 dashboard</p></div>
+    <div class="head-actions"><span class="ki-stage-tag">HISTORICAL REVIEW</span><a class="btn btn-secondary" href="/transport/">HAMA transport</a></div></div>
+  <div class="novman-stat-grid ki-native-grid">
+    <article class="novman-stat"><label>Recorded Transport trips</label><strong>{{ trip_totals.count }}</strong><small>Payment status is unknown</small></article>
+    <article class="novman-stat"><label>Original trip charges · TZS</label><strong>{{ trip_totals.charge|money }}</strong><small>NOT collected cash or customer debt</small></article>
+    <article class="novman-stat"><label>Transport expenses · TZS</label><strong>{{ expenses.amount|money }}</strong><small>{{ expenses.count }} original expenses</small></article>
+    <article class="novman-stat"><label>Transport bookings</label><strong>{{ bookings }}</strong><small>Independent of Retail branches</small></article>
+    <article class="novman-stat"><label>Top-Up cash add-ons · TZS</label><strong>{{ topup.cash|money }}</strong><small>{{ topup.n }} completed exchange records</small></article>
+    <article class="novman-stat"><label>Used items available</label><strong>{{ available }}</strong><small>Source status; no FIFO replays</small></article>
+    <article class="novman-stat"><label>Sold used-item source profit · TZS</label><strong>{{ used_sale|money }}</strong><small>Does not include unknown exchange COGS</small></article>
+    <article class="novman-stat"><label>Retail old debt · TZS</label><strong>{{ debt|money }}</strong><small>Reconciled; independent from HAMA</small></article>
+  </div>
+  <div class="alert ki-note"><strong>Historical accounting note:</strong> Historical trip charges lack proof of payment or debt. Top-Up outgoing-product COGS cannot be reconstructed reliably. The historical SMS log stays separate and cannot send messages. The user-selected Retail branch never controls HAMA NA KILASI.</div>
+  <section class="card ki-section"><div class="ki-section-head"><h2>Trip status summary</h2><p>Recorded source status only; no synthetic settlements.</p></div><div class="table-wrap ki-table-wrap"><table><thead><tr><th>Source status</th><th>Trips</th></tr></thead><tbody>{% for r in trips_status %}<tr><td>{{ r.old_status }}</td><td>{{ r.n }}</td></tr>{% endfor %}</tbody></table></div></section>
+  <section class="card ki-section"><div class="ki-section-head"><h2>Latest archived trip references</h2><p>Financial classification always unverified until supported by real records.</p></div><div class="table-wrap ki-table-wrap"><table><thead><tr><th>Old trip</th><th>Date</th><th>Status</th><th>Recorded charge · TZS</th><th>Settlement</th></tr></thead><tbody>{% for r in trip_rows %}<tr><td>#{{ r.legacy_id }}</td><td>{{ r.service_date }}</td><td>{{ r.old_status }}</td><td>{{ r.amount_charged|money }}</td><td>{{ r.settlement_classification }}</td></tr>{% endfor %}</tbody></table></div></section>
+  <section class="card ki-section"><div class="ki-section-head"><h2>Top-Up financial references</h2><p>Cash add-ons are known; historical exchange profit is NOT known.</p></div><div class="table-wrap ki-table-wrap"><table><thead><tr><th>Old Top-Up</th><th>Date</th><th>Used value · TZS</th><th>Cash add-on · TZS</th><th>Total consideration · TZS</th><th>COGS</th></tr></thead><tbody>{% for r in topup_rows %}<tr><td>#{{ r.legacy_id }}</td><td>{{ r.event_at }}</td><td>{{ r.used_item_value|money }}</td><td>{{ r.cash_addon|money }}</td><td>{{ r.total_consideration|money }}</td><td>{{ r.financial_classification }}</td></tr>{% endfor %}</tbody></table></div></section>
+  <div class="ki-actions ki-action-gap"><a class="btn btn-primary" href="/sales/">Staged Retail sales</a><a class="btn btn-secondary" href="/transport/trips/">Full Transport trip archive</a><a class="btn btn-secondary" href="/trade/topup/">Top-Up source records</a><a class="btn btn-secondary" href="/sms/history/">SMS history</a></div>
+</div>
+{% endblock %}

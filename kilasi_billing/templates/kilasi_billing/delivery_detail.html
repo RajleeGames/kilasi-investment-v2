@@ -1,0 +1,28 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}{{ doc.number }}{% endblock %}
+{% block content %}
+<div class="page-head kb-screen-only"><div><h1>{{ doc.number }}</h1><p>Delivery note · {{ branch.name }}</p></div><div class="head-actions"><button class="btn btn-primary" onclick="window.print()" type="button">Print A4</button><a class="btn btn-secondary" href="{% url 'billing:deliveries' %}">Back</a></div></div>
+<article class="kb-paper"><div class="kb-paper-top"><div class="kb-company">{% if shop.logo %}<img class="kb-logo" src="{{ shop.logo.url }}" alt="">{% endif %}<strong>{{ shop.name }}</strong><small>{{ shop.address }}{% if shop.phone %} · {{ shop.phone }}{% endif %}</small></div><div class="kb-paper-title"><h2>DELIVERY NOTE</h2><strong>{{ doc.number }}</strong><small>{{ doc.issue_date|date:'d M Y' }}</small></div></div>
+{% if doc.sale.status != 'completed' %}<div class="kb-warning">SOURCE SALE VOIDED — DELIVERY NOTE INVALID</div>{% endif %}
+<div class="kb-meta"><div><small>Deliver to</small><strong>{{ doc.delivered_to }}</strong><span>{{ doc.delivery_address }}</span></div><div><small>Reference</small><strong>{{ doc.sale.receipt_no }}</strong><span>{{ branch.name }}</span><span>{{ doc.vehicle_or_driver }}</span></div></div>
+<div class="table-wrap"><table class="kb-document-table"><thead><tr><th>#</th><th>Item description</th><th>Quantity</th><th>Unit</th></tr></thead><tbody>{% for line in doc.sale.items.all %}<tr><td>{{ forloop.counter }}</td><td>{{ line.product.name }}</td><td>{{ line.quantity|qty }}</td><td>{{ line.unit.symbol }}</td></tr>{% endfor %}</tbody></table></div>
+{% if doc.notes %}<div class="kb-notes"><strong>Notes</strong><p>{{ doc.notes|linebreaksbr }}</p></div>{% endif %}
+<div class="kb-signatures"><div>Prepared by: ______________________</div><div>Received by: ______________________</div><div>Date / time: ______________________</div></div>
+<p class="kb-legal">Documentation of the full source sale only. Does not reserve, sell or deduct stock again. Signature fields are blank until physically signed.</p></article>
+
+{% if doc.sale.status == 'completed' %}
+<section class="card compact kb-screen-only section-gap">
+  {% if doc.kilasi_sms_delivery_confirmation %}
+  <strong>Goods received</strong><p>Confirmed by {{ doc.kilasi_sms_delivery_confirmation.received_by }} on {{ doc.kilasi_sms_delivery_confirmation.confirmed_at|date:'d M Y H:i' }}. This will not queue a duplicate SMS.</p>
+  {% else %}
+  <strong>Confirm physical delivery</strong><p>Only mark this after the customer has actually received the goods.</p>
+  <form method="post" action="{% url 'retail_sms:mark_delivered' doc.pk %}" class="form-body">{% csrf_token %}
+    <label>Received by<input class="form-control" name="received_by" required maxlength="160"></label>
+    <label>Notes<input class="form-control" name="notes" maxlength="250"></label>
+    <div class="form-actions"><button class="btn btn-primary" type="submit">Mark delivered</button></div>
+  </form>
+  {% endif %}
+</section>
+{% endif %}
+
+{% endblock %}

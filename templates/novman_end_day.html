@@ -1,0 +1,8 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}End Day Snapshot{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>End Day — {{ branch.name }}</h1><p>Live branch cash and payment reconciliation. This page does not post a closing.</p></div><a class="btn btn-secondary" href="{% url 'dashboard' %}">Dashboard</a></div>
+<form method="get" class="novman-filters"><label>Day<input class="form-control" name="date" type="date" value="{{ day|date:'Y-m-d' }}"></label><button class="btn btn-primary">View</button></form>
+<section class="novman-stat-grid"><article class="novman-stat"><label>Cash sales</label><strong>{{ cash|money }} TZS</strong></article><article class="novman-stat"><label>Mobile money sales</label><strong>{{ mobile|money }} TZS</strong></article><article class="novman-stat"><label>Bank sales</label><strong>{{ bank|money }} TZS</strong></article><article class="novman-stat"><label>Debt sales</label><strong>{{ debt|money }} TZS</strong></article><article class="novman-stat"><label>Debt collected in cash</label><strong>{{ collected_cash|money }} TZS</strong></article><article class="novman-stat"><label>Cash receipts expected</label><strong>{{ expected_cash_receipts|money }} TZS</strong><small>Before cash float and cash paid out</small></article></section>
+<p class="novman-note">{{ sales_count }} completed sales. Debt collections: mobile {{ collected_mobile|money }} TZS, bank {{ collected_bank|money }} TZS. Physical cash counting and posted closing will be added after testing.</p>
+{% endblock %}

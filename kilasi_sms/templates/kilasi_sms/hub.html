@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block page_title %}{% if department == 'transport' %}HAMA NA KILASI{% else %}Retail{% endif %} SMS Hub{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% if department == 'transport' %}HAMA NA KILASI{% else %}Retail{% endif %} SMS Hub</h1><p>{{ branch.name }} · Customer messages from recorded business activity. Draft and review before sending.</p></div>
+  <div class="head-actions"><a class="btn btn-secondary" href="{{ history_url }}">Message history</a><a class="btn btn-secondary" href="{{ hub_url }}">Reset filters</a></div>
+</div>
+<div class="dashboard-strip nv-dashboard-strip">
+  <div><span>Current audience rows</span><strong>{{ total_rows }}</strong></div>
+  <div><span>Department</span><strong>{{ branch.name }}</strong></div>
+  <div><span>Per draft limit</span><strong>{{ limit }}</strong></div>
+  <div><span>Live Beem delivery</span><strong>{% if live_ready %}Enabled{% else %}OFF — safe preview{% endif %}</strong></div>
+</div>
+<section class="card section-gap"><div class="card-head"><div><h2>Filter customers</h2><p>Choose a source and date range. Retail and HAMA NA KILASI audiences are never mixed.</p></div></div>
+  <form class="form-body" method="get" action="{{ hub_url }}"><div class="form-grid two">
+    <label>From date<input class="form-control" type="date" name="start" value="{{ filters.start|date:'Y-m-d' }}" required></label>
+    <label>To date<input class="form-control" type="date" name="end" value="{{ filters.end|date:'Y-m-d' }}" required></label>
+    <label>Business source<select class="form-control" name="source">{% for key,label in sources %}<option value="{{ key }}" {% if filters.source == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+    <label>{% if department == 'retail' %}Payment method{% else %}Booking / trip status{% endif %}<select class="form-control" name="status">{% for key,label in status_options %}<option value="{{ key }}" {% if filters.status == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+    <label>Name, phone or reference<input class="form-control" name="q" value="{{ filters.q }}" placeholder="Search this department"></label>
+  </div><div class="form-actions"><button class="btn btn-primary" type="submit">Apply filters</button></div></form>
+</section>
+<form method="post" action="{{ draft_url }}" id="kilasiSmsDraftForm">{% csrf_token %}
+  <input type="hidden" name="start" value="{{ filters.start|date:'Y-m-d' }}">
+  <input type="hidden" name="end" value="{{ filters.end|date:'Y-m-d' }}">
+  <input type="hidden" name="source" value="{{ filters.source }}">
+  <input type="hidden" name="status" value="{{ filters.status }}">
+  <input type="hidden" name="q" value="{{ filters.q }}">
+  <section class="card section-gap">
+    <div class="card-head"><div><h2>Select customers</h2><p>Select at most {{ limit }} event rows. The server deduplicates repeated phone numbers when drafting.</p></div></div>
+    <div class="table-wrap"><table><thead><tr><th>Select</th><th>Customer</th><th>Phone</th><th>Source</th><th>Reference</th><th>Date</th><th>Status</th></tr></thead><tbody>
+    {% for row in rows %}<tr>
+      <td><input type="checkbox" name="selected" value="{{ row.key }}" {% if row.blocked %}disabled{% endif %}></td>
+      <td><span class="table-primary">{{ row.name }}</span></td><td>{{ row.phone }}</td><td>{{ row.kind|title }}</td>
+      <td>{{ row.reference }}</td><td>{{ row.date|date:'d M Y' }}</td><td>{% if row.blocked %}<span class="badge low">SMS blocked</span>{% else %}{{ row.status|default:'—' }}{% endif %}</td>
+    </tr>{% empty %}<tr><td colspan="7" class="empty">No customers with valid phone numbers for these filters.</td></tr>{% endfor %}
+    </tbody></table></div>
+    <div class="form-body">{% if rows.has_other_pages %}<p class="field-note">Page {{ rows.number }} of {{ rows.paginator.num_pages }}. Select recipients from one page at a time.</p>
+      <div class="head-actions">{% if rows.has_previous %}<a class="btn btn-secondary btn-sm" href="?start={{ filters.start|date:'Y-m-d' }}&amp;end={{ filters.end|date:'Y-m-d' }}&amp;source={{ filters.source }}&amp;status={{ filters.status }}&amp;q={{ filters.q|urlencode }}&amp;page={{ rows.previous_page_number }}">Previous</a>{% endif %}
+      {% if rows.has_next %}<a class="btn btn-secondary btn-sm" href="?start={{ filters.start|date:'Y-m-d' }}&amp;end={{ filters.end|date:'Y-m-d' }}&amp;source={{ filters.source }}&amp;status={{ filters.status }}&amp;q={{ filters.q|urlencode }}&amp;page={{ rows.next_page_number }}">Next</a>{% endif %}</div>{% endif %}</div>
+  </section>
+  <section class="card section-gap"><div class="card-head"><div><h2>Compose a personalized SMS</h2><p>Supports {name}, {first_name}, {phone}, {reference}, {pickup}, {destination}, {date}, {amount}, {status}, {branch}. Use the same placeholders with double braces if preferred.</p></div></div>
+    <div class="form-body">
+      <div class="form-grid two"><label>Draft title<input class="form-control" name="title" maxlength="160" required placeholder="e.g. Booking confirmation"></label>
+        <label>Sender ID<select class="form-control" name="sender_id" required><option value="">Select active Sender ID</option>{% for p in sender_profiles %}<option value="{{ p.sender_id }}" {% if p.is_default %}selected{% endif %}>{{ p.sender_id }}</option>{% endfor %}</select></label>
+      </div>
+      <label>Template (optional)<select class="form-control" name="template_id"><option value="">Custom message</option>{% for t in templates %}<option value="{{ t.pk }}" {% if picked.pk == t.pk %}selected{% endif %}>{{ t.name }}</option>{% endfor %}</select></label>
+      <p class="field-note">To load a saved template into the editor, select it above and use the corresponding link: {% for t in templates %}<a class="table-link" href="?start={{ filters.start|date:'Y-m-d' }}&amp;end={{ filters.end|date:'Y-m-d' }}&amp;source={{ filters.source }}&amp;status={{ filters.status }}&amp;template={{ t.pk }}">{{ t.name }}</a>{% if not forloop.last %} · {% endif %}{% empty %}Run the seed command to create Kilasi lifecycle templates.{% endfor %}</p>
+      <label>Message<textarea class="form-control" name="message" rows="5" maxlength="1000" placeholder="Ndugu {first_name}, ...">{% if picked %}{{ picked.body }}{% endif %}</textarea></label>
+      <label class="toggle-row"><span><span class="toggle-title">I confirm these are relevant service/transaction updates</span><small>Do not send unsolicited promotions. Respect customers who opted out.</small></span><input class="toggle-input" type="checkbox" name="confirm_relationship" required></label>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Create preview draft</button></div>
+    </div>
+  </section>
+</form>
+<section class="card section-gap"><div class="card-head"><div><h2>Recent SMS drafts and sends</h2><p>Provider acceptance does not mean delivery has been confirmed.</p></div><a class="text-link" href="{{ history_url }}">All history</a></div>
+  <div class="table-wrap"><table><thead><tr><th>Date</th><th>Title</th><th>Status</th><th>Recipients</th><th></th></tr></thead><tbody>{% for d in drafts %}
+  <tr><td>{{ d.created_at|date:'d M Y H:i' }}</td><td>{{ d.campaign.title }}</td><td><span class="badge">{{ d.get_status_display }}</span></td><td>{{ d.campaign.recipient_count }}</td><td><a class="btn btn-secondary btn-sm" href="{% if department == 'retail' %}{% url 'retail_sms:detail' d.pk %}{% else %}{% url 'transport_sms:detail' d.pk %}{% endif %}">Open</a></td></tr>
+  {% empty %}<tr><td colspan="5" class="empty">No drafts yet.</td></tr>{% endfor %}</tbody></table></div>
+</section>
+{% endblock %}

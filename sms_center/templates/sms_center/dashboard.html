@@ -1,0 +1,48 @@
+{% extends "sms_center/shell.html" %}
+{% block title %}SMS Center · {{ shop.name }}{% endblock %}
+{% block page_title %}SMS Center{% endblock %}
+{% block content %}
+<div class="page-head sms-page-head">
+  <div><h1>SMS Center</h1><p>Message KILASI INVESTMENT customers using contacts from the POS database.</p></div>
+  <div class="head-actions"><a class="btn btn-primary" href="{% url 'sms_center:send' %}">Send SMS</a></div>
+</div>
+{% include "sms_center/_nav.html" %}
+
+<div class="sms-kpi-grid">
+  <article class="sms-kpi"><span>Beem balance</span><strong>{{ sms_balance.display }}</strong><small>{{ sms_balance.message }}</small></article>
+  <article class="sms-kpi"><span>System customers</span><strong>{{ customer_count }}</strong><small>Active customers with a phone number</small></article>
+  <article class="sms-kpi"><span>SMS contacts</span><strong>{{ contact_count }}</strong><small>Active and allowed contacts</small></article>
+  <article class="sms-kpi"><span>Sent today</span><strong>{{ sent_today }}</strong><small>{{ delivered_today }} delivered · {{ failed_today }} failed</small></article>
+</div>
+
+<div class="sms-dashboard-grid">
+  <section class="card sms-panel">
+    <div class="card-head"><div><h2>Quick actions</h2><p>Common SMS tasks.</p></div></div>
+    <div class="sms-action-grid">
+      <a class="sms-action-card" href="{% url 'sms_center:send' %}"><b>Send message</b><span>Select customers and compose an SMS.</span></a>
+      <a class="sms-action-card" href="{% url 'sms_center:contacts' %}"><b>Customer contacts</b><span>Sync POS customers or manage opt-outs.</span></a>
+      <a class="sms-action-card" href="{% url 'sms_center:templates' %}"><b>Templates</b><span>Save promotions and reminders.</span></a>
+      <a class="sms-action-card" href="{% url 'sms_center:history' %}"><b>History</b><span>Review sent, delivered and failed messages.</span></a>
+    </div>
+  </section>
+
+  <section class="card sms-panel">
+    <div class="card-head"><div><h2>Provider</h2><p>Current SMS connection state.</p></div></div>
+    <div class="sms-provider-card">
+      <div><span>Status</span><strong>{% if provider_configured %}Configured{% else %}Not configured{% endif %}</strong></div>
+      <div><span>Default sender</span><strong>{{ default_sender|default:"—" }}</strong></div>
+      <div><span>This month</span><strong>{{ campaigns_month }} campaigns</strong></div>
+      <p>{% if provider_configured %}Beem credentials are available to the application.{% else %}Add Beem environment variables before sending live SMS.{% endif %}</p>
+    </div>
+  </section>
+</div>
+
+<section class="card section-gap">
+  <div class="card-head"><div><h2>Recent campaigns</h2><p>Latest SMS activity.</p></div><a class="text-link" href="{% url 'sms_center:history' %}">View all</a></div>
+  <div class="table-wrap"><table><thead><tr><th>Date</th><th>Campaign</th><th>Sender</th><th>Recipients</th><th>Units</th><th>Status</th></tr></thead><tbody>
+  {% for campaign in recent_campaigns %}
+    <tr><td>{{ campaign.created_at|date:"d M Y H:i" }}</td><td><a class="table-link" href="{% url 'sms_center:campaign_detail' campaign.pk %}">{{ campaign.title }}</a></td><td>{{ campaign.sender_id }}</td><td>{{ campaign.recipient_count }}</td><td>{{ campaign.estimated_units }}</td><td><span class="sms-status {{ campaign.status }}">{{ campaign.get_status_display }}</span></td></tr>
+  {% empty %}<tr><td colspan="6" class="empty">No SMS campaigns yet.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+{% endblock %}

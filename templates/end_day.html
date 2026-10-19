@@ -1,0 +1,101 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}End Day{% endblock %}
+{% block content %}
+<div class="page-head operations-head">
+  <div>
+    <h1>End day</h1>
+    <p>Reconcile sales and debt collections against the physical cash counted in the drawer.</p>
+  </div>
+  <div class="head-actions"><a class="btn btn-secondary" href="{% url 'pos' %}">Back to POS</a></div>
+</div>
+
+<section class="card compact end-day-filter-card">
+  <form method="get" class="end-day-filter">
+    <label><span>Date</span><input class="form-control" type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}" max="{{ today|date:'Y-m-d' }}"></label>
+    {% if is_admin_view %}
+    <label><span>Cashier</span><select class="form-control" name="cashier">{% for u in available_users %}<option value="{{ u.id }}" {% if u.id == target_cashier.id %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>{% endfor %}</select></label>
+    {% endif %}
+    <button class="btn btn-secondary" type="submit">View day</button>
+  </form>
+</section>
+
+<div class="closing-kpi-grid section-gap">
+  <div class="closing-kpi"><span>Cash sales</span><strong>{{ summary.cash_sales|money }} <small>TZS</small></strong><em>{{ summary.sale_count }} completed sales total</em></div>
+  <div class="closing-kpi"><span>Mobile Money</span><strong>{{ summary.mobile_money_sales|money }} <small>TZS</small></strong><em>Sales paid by mobile money</em></div>
+  <div class="closing-kpi"><span>Bank</span><strong>{{ summary.bank_sales|money }} <small>TZS</small></strong><em>Sales paid by bank</em></div>
+  <div class="closing-kpi"><span>Debt sales</span><strong>{{ summary.debt_sales|money }} <small>TZS</small></strong><em>Credit given today</em></div>
+  <div class="closing-kpi"><span>Debt cash collected</span><strong>{{ summary.debt_cash_collected|money }} <small>TZS</small></strong><em>{{ summary.payment_count }} debt payments total</em></div>
+</div>
+
+<div class="content-grid two-one section-gap closing-layout">
+  <section class="card">
+    <div class="card-head"><div><h2>Day summary</h2><p>{{ selected_date|date:'d M Y' }} · {{ target_cashier.get_full_name|default:target_cashier.username }}</p></div>{% if existing %}<span class="badge completed">Closed</span>{% else %}<span class="badge low">Open</span>{% endif %}</div>
+    <div class="closing-summary-list">
+      <div><span>Cash sales</span><strong>{{ summary.cash_sales|money }} TZS</strong></div>
+      <div><span>Mobile Money sales</span><strong>{{ summary.mobile_money_sales|money }} TZS</strong></div>
+      <div><span>Bank sales</span><strong>{{ summary.bank_sales|money }} TZS</strong></div>
+      <div><span>Debt sales</span><strong>{{ summary.debt_sales|money }} TZS</strong></div>
+      <div class="closing-summary-divider"><span>Debt collected · Cash</span><strong>{{ summary.debt_cash_collected|money }} TZS</strong></div>
+      <div><span>Debt collected · Mobile Money</span><strong>{{ summary.debt_mobile_collected|money }} TZS</strong></div>
+      <div><span>Debt collected · Bank</span><strong>{{ summary.debt_bank_collected|money }} TZS</strong></div>
+      <div class="closing-summary-total"><span>Total sales</span><strong>{{ summary.sales_total|money }} TZS</strong></div>
+      <div><span>Total debt collected</span><strong>{{ summary.debt_collected_total|money }} TZS</strong></div>
+    </div>
+  </section>
+
+  <section class="card closing-card">
+    {% if existing %}
+      <div class="card-head"><div><h2>{{ existing.reference }}</h2><p>Closed {{ existing.closed_at|date:'d M Y, H:i' }}</p></div></div>
+      <div class="closing-result">
+        <div><span>Opening float</span><strong>{{ existing.opening_float|money }} TZS</strong></div>
+        <div><span>Cash sales + cash debt payments</span><strong>{{ existing.cash_sales|add:existing.debt_cash_collected|money }} TZS</strong></div>
+        <div><span>Cash paid out</span><strong>− {{ existing.cash_paid_out|money }} TZS</strong></div>
+        <div class="closing-result-main"><span>Expected cash</span><strong>{{ existing.expected_cash|money }} TZS</strong></div>
+        <div class="closing-result-main"><span>Counted cash</span><strong>{{ existing.counted_cash|money }} TZS</strong></div>
+        <div class="closing-difference {% if existing.difference < 0 %}negative{% elif existing.difference > 0 %}positive{% endif %}"><span>Difference</span><strong>{{ existing.difference|money }} TZS</strong></div>
+        <small>Closed by {{ existing.closed_by.get_full_name|default:existing.closed_by.username }}{% if existing.notes %} · {{ existing.notes }}{% endif %}</small>
+      </div>
+      {% if existing.amended_at %}<div class="closing-amend-note">Amended {{ existing.amended_at|date:'d M Y, H:i' }} by {{ existing.amended_by.get_full_name|default:existing.amended_by.username }} · {{ existing.amendment_reason }}</div>{% endif %}
+
+      {% if is_admin_view %}
+      <details class="closing-amend">
+        <summary>Amend counted cash</summary>
+        <form method="post" action="{% url 'cash_closing_amend' existing.id %}" class="form-body">
+          {% csrf_token %}
+          <div class="form-grid two">
+            <label>Opening float<input class="form-control" type="number" step="any" min="0" name="opening_float" value="{{ existing.opening_float }}" required></label>
+            <label>Cash paid out<input class="form-control" type="number" step="any" min="0" name="cash_paid_out" value="{{ existing.cash_paid_out }}" required></label>
+            <label>Counted cash<input class="form-control" type="number" step="any" min="0" name="counted_cash" value="{{ existing.counted_cash }}" required></label>
+            <label>Amendment reason<input class="form-control" name="amendment_reason" maxlength="240" placeholder="Why is this closing being changed?" required></label>
+          </div>
+          <label>Notes<input class="form-control" name="notes" maxlength="240" value="{{ existing.notes }}"></label>
+          <div class="form-actions"><button class="btn btn-secondary" type="submit">Save amendment</button></div>
+        </form>
+      </details>
+      {% endif %}
+    {% else %}
+      <div class="card-head"><div><h2>Close this day</h2><p>Count the physical cash after the cashier finishes.</p></div></div>
+      <form method="post" class="form-body closing-form" data-closing-base-cash="{{ base_cash }}">
+        {% csrf_token %}
+        <input type="hidden" name="close_date" value="{{ selected_date|date:'Y-m-d' }}">
+        <input type="hidden" name="cashier_id" value="{{ target_cashier.id }}">
+        <label>Opening float <span class="field-note">Cash already in the drawer before sales started.</span><input class="form-control" id="closingOpeningFloat" type="number" name="opening_float" value="0" min="0" step="any" inputmode="decimal"></label>
+        <label>Cash paid out <span class="field-note">Cash removed from the drawer, such as petty cash or a deposit.</span><input class="form-control" id="closingCashPaidOut" type="number" name="cash_paid_out" value="0" min="0" step="any" inputmode="decimal"></label>
+        <div class="closing-live-expected"><span>Expected cash</span><strong id="closingExpected">{{ base_cash|money }} TZS</strong><small>Opening float + cash sales + cash debt collections − cash paid out</small></div>
+        <label>Cashier counted cash<input class="form-control closing-count-input" id="closingCountedCash" type="number" name="counted_cash" min="0" step="any" inputmode="decimal" placeholder="Enter physical cash" required></label>
+        <div class="closing-live-difference"><span>Difference</span><strong id="closingDifference">0 TZS</strong></div>
+        <label>Notes <span class="field-note">Optional explanation for shortages, excess cash or paid-out money.</span><textarea class="form-control" name="notes" rows="2" maxlength="240"></textarea></label>
+        <button class="btn btn-primary btn-block" type="submit">Close day</button>
+      </form>
+    {% endif %}
+  </section>
+</div>
+
+<section class="card section-gap">
+  <div class="card-head"><div><h2>Closing history</h2><p>Saved cash reconciliation snapshots.</p></div></div>
+  <div class="table-wrap"><table><thead><tr><th>Date</th><th>Cashier</th><th>Expected</th><th>Counted</th><th>Difference</th><th>Closed by</th></tr></thead><tbody>
+    {% for c in history %}<tr><td><span class="table-primary">{{ c.close_date|date:'d M Y' }}</span><span class="cell-sub">{{ c.reference }}</span></td><td>{{ c.cashier.get_full_name|default:c.cashier.username }}</td><td>{{ c.expected_cash|money }} TZS</td><td>{{ c.counted_cash|money }} TZS</td><td class="{% if c.difference < 0 %}closing-negative-text{% elif c.difference > 0 %}closing-positive-text{% endif %}">{{ c.difference|money }} TZS</td><td>{{ c.closed_by.get_full_name|default:c.closed_by.username }}</td></tr>
+    {% empty %}<tr><td colspan="6" class="empty">No end-day closings yet.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+{% endblock %}

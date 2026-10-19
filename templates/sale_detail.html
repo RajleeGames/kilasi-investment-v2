@@ -1,0 +1,1950 @@
+{% extends 'base.html' %}
+{% load mfp static %}
+
+{% block page_title %}
+{{ sale.receipt_no }}
+{% endblock %}
+
+
+{% block content %}
+
+<div class="page-head no-print">
+
+    <div>
+
+        <h1>
+            {{ sale.receipt_no }}
+        </h1>
+
+        <p>
+            {{ sale.sold_at|date:'d M Y · H:i' }}
+            ·
+            {{ sale.cashier.get_full_name|default:sale.cashier.username }}
+        </p>
+
+    </div>
+
+
+    <div class="head-actions">
+
+        {% if sale.customer and request.user.profile.role == 'admin' or sale.customer and request.user.is_superuser %}
+
+            <a
+                class="btn btn-secondary"
+                href="{% url 'customer_detail' sale.customer.id %}"
+            >
+                Customer account
+            </a>
+
+        {% endif %}
+
+
+        <!-- KILASI_V2_PHASE3B_BILLING -->
+        {% if request.user.is_superuser or request.user.profile.role == 'admin' %}
+        <a class="btn btn-secondary" href="{% url 'billing:invoice_new' sale.pk %}">Invoice</a>
+        <a class="btn btn-secondary" href="{% url 'billing:delivery_new' sale.pk %}">Delivery note</a>
+        {% endif %}
+
+        <!-- KILASI_V2_PHASE3_FINANCE -->
+        <a class="btn btn-secondary" href="{% url 'kilasi_sales_document' sale.pk %}">Print A4 sales document</a>
+
+        <button
+            class="btn btn-primary"
+            id="qzPrintBtn"
+            type="button"
+        >
+            Print receipt
+        </button>
+
+
+        <a
+            class="btn btn-secondary"
+            href="{% url 'sales' %}"
+        >
+            Back
+        </a>
+
+    </div>
+
+</div>
+
+
+
+{% if sale.payment_method == 'debt' and sale.customer %}
+
+<div class="credit-sale-banner no-print">
+
+    <div>
+
+        <span>
+            Debt sale
+        </span>
+
+        <strong>
+            {{ sale.customer.name }}
+        </strong>
+
+    </div>
+
+
+    <div>
+
+        <small>
+            Current customer balance
+        </small>
+
+        <strong>
+            {{ sale.customer.current_balance|money }} TZS
+        </strong>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+
+
+<style>
+
+    .thermal-receipt-wrap {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        padding: 10px 0 24px;
+    }
+
+
+    .thermal-receipt-panel {
+        width: 100%;
+        max-width: 390px;
+    }
+
+
+    .thermal-receipt-card {
+        background: #fff;
+        color: #111;
+        border: 1px solid rgba(0,0,0,.08);
+        border-radius: 8px;
+        padding: 14px 12px;
+        overflow-x: auto;
+    }
+
+
+    #receiptContent {
+        margin: 0 auto;
+        width: 42ch;
+        max-width: 42ch;
+
+        font-family:
+            "Courier New",
+            Courier,
+            monospace;
+
+        font-size: 11px;
+        line-height: 1.25;
+
+        color: #111;
+
+        white-space: pre;
+
+        text-align: left;
+    }
+
+
+    #qzPrintStatus {
+        min-height: 20px;
+        margin-top: 9px;
+
+        text-align: center;
+
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+
+    #qzPrintStatus.success {
+        color: #198754;
+    }
+
+
+    #qzPrintStatus.error {
+        color: #dc3545;
+    }
+
+
+    @media print {
+
+        .no-print,
+        #qzPrintStatus {
+            display: none !important;
+        }
+
+
+        .thermal-receipt-wrap {
+            display: block;
+            padding: 0;
+        }
+
+
+        .thermal-receipt-panel {
+            width: 80mm;
+            max-width: 80mm;
+        }
+
+
+        .thermal-receipt-card {
+            width: 80mm;
+
+            padding: 0;
+
+            border: 0;
+            border-radius: 0;
+
+            box-shadow: none;
+        }
+
+
+        #receiptContent {
+            font-size: 11px;
+            line-height: 1.2;
+        }
+
+    }
+
+</style>
+
+
+
+<div class="thermal-receipt-wrap">
+
+    <div class="thermal-receipt-panel">
+
+        <div class="thermal-receipt-card">
+
+            <pre id="receiptContent"></pre>
+
+        </div>
+
+
+        <div
+            id="qzPrintStatus"
+            class="no-print"
+            role="status"
+            aria-live="polite"
+        ></div>
+
+    </div>
+
+</div>
+
+
+
+{% if sale.status == 'completed' and request.user.profile.role == 'admin' or sale.status == 'completed' and request.user.is_superuser %}
+
+<section class="card danger-zone no-print">
+
+    <div>
+
+        <h2>
+            Void sale
+        </h2>
+
+        <p>
+            Voiding restores the exact FIFO batch quantities used
+            by this sale and removes debt from the customer account
+            when applicable.
+        </p>
+
+    </div>
+
+
+    <form
+        method="post"
+        action="{% url 'sale_void' sale.id %}"
+        class="inline-search"
+        onsubmit="return confirm('Void this sale and restore stock?')"
+    >
+
+        {% csrf_token %}
+
+
+        <input
+            class="form-control"
+            name="reason"
+            placeholder="Reason for void"
+            required
+        >
+
+
+        <button class="btn btn-danger">
+            Void sale
+        </button>
+
+    </form>
+
+</section>
+
+{% endif %}
+
+
+
+{% if sale.status == 'voided' %}
+
+<div class="alert error no-print">
+
+    Voided by
+    {{ sale.voided_by.username }}
+
+    on
+    {{ sale.voided_at|date:'d M Y H:i' }}.
+
+    {{ sale.void_reason }}
+
+</div>
+
+{% endif %}
+
+
+
+<form
+    id="qzCsrfForm"
+    style="display:none"
+>
+    {% csrf_token %}
+</form>
+
+{% endblock %}
+
+
+
+{% block scripts %}
+
+<script src="{% static 'vendor/qz/qz-tray.js' %}"></script>
+
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        "use strict";
+
+
+        /* ====================================================
+           RECEIPT DATA
+        ==================================================== */
+
+        const RECEIPT_WIDTH = 42;
+
+
+        const receipt = {
+
+            shopName:
+                "{{ shop.name|default:'KIBOSHO CENTRAL HARDWARE'|escapejs }}",
+
+            shopAddress:
+                "{{ shop.address|default:''|escapejs }}",
+
+            shopPhone:
+                "{{ shop.phone|default:''|escapejs }}",
+
+            footer:
+                "{{ shop.receipt_footer|default:'Asante kwa manunuzi yako. Karibu tena.'|escapejs }}",
+
+            receiptNo:
+                "{{ sale.receipt_no|escapejs }}",
+
+            date:
+                "{{ sale.sold_at|date:'d/m/Y'|escapejs }}",
+
+            time:
+                "{{ sale.sold_at|date:'H:i'|escapejs }}",
+
+            cashier:
+                "{{ sale.cashier.get_full_name|default:sale.cashier.username|escapejs }}",
+
+            customerName:
+                "{{ sale.customer_name|default:''|escapejs }}",
+
+            customerPhone:
+                "{{ sale.customer.phone|default:''|escapejs }}",
+
+            payment:
+                "{{ sale.get_payment_method_display|escapejs }}",
+
+            subtotal:
+                "{{ sale.subtotal }}",
+
+            itemDiscount:
+                "{{ sale.item_discount_total }}",
+
+            billDiscount:
+                "{{ sale.sale_discount }}",
+
+            total:
+                "{{ sale.grand_total }}",
+
+            status:
+                "{{ sale.status|escapejs }}",
+
+            items: [
+
+                {% for i in sale.items.all %}
+
+                {
+
+                    name:
+                        "{{ i.product.name|escapejs }}",
+
+                    quantity:
+                        "{{ i.quantity }}",
+
+                    unit:
+                        "{{ i.unit.symbol|default:''|escapejs }}",
+
+                    unitName:
+                        "{{ i.unit.name|escapejs }}",
+
+                    price:
+                        "{{ i.normal_unit_price }}",
+
+                    discount:
+                        "{{ i.discount_amount }}",
+
+                    total:
+                        "{{ i.final_total }}"
+
+                },
+
+                {% endfor %}
+
+            ]
+
+        };
+
+
+
+        const PRINTER_NAME =
+            "{{ qz_printer_name|default:''|escapejs }}";
+
+
+        const receiptEl =
+            document.getElementById(
+                "receiptContent"
+            );
+
+
+        const printBtn =
+            document.getElementById(
+                "qzPrintBtn"
+            );
+
+
+        const statusEl =
+            document.getElementById(
+                "qzPrintStatus"
+            );
+
+
+        let printing = false;
+
+
+
+        /* ====================================================
+           BASIC HELPERS
+        ==================================================== */
+
+        function numberValue(value) {
+
+            const valueNumber =
+                Number(
+                    String(value || "0")
+                        .replace(/,/g, "")
+                );
+
+
+            return Number.isFinite(
+                valueNumber
+            )
+                ? valueNumber
+                : 0;
+
+        }
+
+
+
+        function money(value) {
+
+            return numberValue(value)
+                .toLocaleString(
+                    "en-US",
+                    {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    }
+                );
+
+        }
+
+
+
+        function quantity(value) {
+
+            const number =
+                numberValue(value);
+
+
+            return number.toLocaleString(
+                "en-US",
+                {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 4
+                }
+            );
+
+        }
+
+
+
+        function clean(value) {
+
+            return String(
+                value || ""
+            )
+            .replace(/\r/g, "")
+            .replace(/\t/g, " ")
+            .trim();
+
+        }
+
+
+
+        function repeat(
+            character,
+            count
+        ) {
+
+            return character.repeat(
+                Math.max(
+                    0,
+                    count
+                )
+            );
+
+        }
+
+
+
+        /* ====================================================
+           CENTER TEXT
+        ==================================================== */
+
+        function center(
+            text,
+            width = RECEIPT_WIDTH
+        ) {
+
+            text =
+                clean(text);
+
+
+            if (
+                text.length >= width
+            ) {
+
+                return text.substring(
+                    0,
+                    width
+                );
+
+            }
+
+
+            const left =
+                Math.floor(
+                    (
+                        width -
+                        text.length
+                    )
+                    /
+                    2
+                );
+
+
+            return (
+                repeat(
+                    " ",
+                    left
+                )
+                +
+                text
+            );
+
+        }
+
+
+
+        /* ====================================================
+           LEFT / RIGHT LINE
+        ==================================================== */
+
+        function leftRight(
+            left,
+            right,
+            width = RECEIPT_WIDTH
+        ) {
+
+            left =
+                clean(left);
+
+            right =
+                clean(right);
+
+
+            if (
+                right.length >= width
+            ) {
+
+                return right.substring(
+                    0,
+                    width
+                );
+
+            }
+
+
+            const available =
+                width -
+                right.length -
+                1;
+
+
+            if (
+                left.length >
+                available
+            ) {
+
+                left =
+                    left.substring(
+                        0,
+                        available
+                    );
+
+            }
+
+
+            return (
+                left
+                +
+                repeat(
+                    " ",
+                    width -
+                    left.length -
+                    right.length
+                )
+                +
+                right
+            );
+
+        }
+
+
+
+        /* ====================================================
+           MONEY LINE
+        ==================================================== */
+
+        function moneyLine(
+            label,
+            amount
+        ) {
+
+            return leftRight(
+                label,
+                money(amount)
+            );
+
+        }
+
+
+
+        /* ====================================================
+           WRAP
+        ==================================================== */
+
+        function wrap(
+            text,
+            width = RECEIPT_WIDTH
+        ) {
+
+            text =
+                clean(text);
+
+
+            if (!text) {
+                return [];
+            }
+
+
+            const words =
+                text.split(/\s+/);
+
+
+            const lines =
+                [];
+
+
+            let current =
+                "";
+
+
+            words.forEach(
+                function (originalWord) {
+
+                    let word =
+                        originalWord;
+
+
+                    if (
+                        word.length >
+                        width
+                    ) {
+
+                        if (current) {
+
+                            lines.push(
+                                current
+                            );
+
+                            current = "";
+
+                        }
+
+
+                        while (
+                            word.length >
+                            width
+                        ) {
+
+                            lines.push(
+                                word.substring(
+                                    0,
+                                    width
+                                )
+                            );
+
+
+                            word =
+                                word.substring(
+                                    width
+                                );
+
+                        }
+
+                    }
+
+
+                    if (!word) {
+                        return;
+                    }
+
+
+                    const candidate =
+                        current
+                            ? current + " " + word
+                            : word;
+
+
+                    if (
+                        candidate.length <=
+                        width
+                    ) {
+
+                        current =
+                            candidate;
+
+                    } else {
+
+                        if (current) {
+
+                            lines.push(
+                                current
+                            );
+
+                        }
+
+
+                        current =
+                            word;
+
+                    }
+
+                }
+            );
+
+
+            if (current) {
+
+                lines.push(
+                    current
+                );
+
+            }
+
+
+            return lines;
+
+        }
+
+
+
+        /* ====================================================
+           BUILD RECEIPT TEXT
+        ==================================================== */
+
+        function buildReceiptText() {
+
+            const lines =
+                [];
+
+
+            const separator =
+                "-".repeat(
+                    RECEIPT_WIDTH
+                );
+
+
+            /* -----------------------------------------------
+               HEADER
+            ------------------------------------------------ */
+
+            wrap(
+                receipt.shopName.toUpperCase()
+            )
+            .forEach(
+                function (line) {
+
+                    lines.push(
+                        center(line)
+                    );
+
+                }
+            );
+
+
+            if (
+                receipt.shopAddress
+            ) {
+
+                receipt.shopAddress
+                    .split(/\r?\n/)
+                    .forEach(
+                        function (addressLine) {
+
+                            wrap(
+                                addressLine
+                            )
+                            .forEach(
+                                function (line) {
+
+                                    lines.push(
+                                        center(line)
+                                    );
+
+                                }
+                            );
+
+                        }
+                    );
+
+            }
+
+
+            if (
+                receipt.shopPhone
+            ) {
+
+                lines.push(
+                    center(
+                        receipt.shopPhone
+                    )
+                );
+
+            }
+
+
+            lines.push("");
+
+
+            if (
+                receipt.status ===
+                "voided"
+            ) {
+
+                lines.push(
+                    center(
+                        "*** VOIDED SALE ***"
+                    )
+                );
+
+            } else {
+
+                lines.push(
+                    center(
+                        "*** SALES RECEIPT ***"
+                    )
+                );
+
+            }
+
+
+            lines.push("");
+
+
+            /* -----------------------------------------------
+               SALE META
+            ------------------------------------------------ */
+
+            lines.push(
+                "Receipt No: " +
+                receipt.receiptNo
+            );
+
+
+            lines.push(
+                "Date: " +
+                receipt.date +
+                " " +
+                receipt.time
+            );
+
+
+            lines.push(
+                "Cashier: " +
+                receipt.cashier
+            );
+
+
+            if (
+                receipt.customerName
+            ) {
+
+                wrap(
+                    "Customer: " +
+                    receipt.customerName
+                )
+                .forEach(
+                    function (line) {
+
+                        lines.push(
+                            line
+                        );
+
+                    }
+                );
+
+            }
+
+
+            if (
+                receipt.customerPhone
+            ) {
+
+                lines.push(
+                    "Phone: " +
+                    receipt.customerPhone
+                );
+
+            }
+
+
+            lines.push("");
+
+            lines.push(
+                separator
+            );
+
+
+            /* -----------------------------------------------
+               ITEM HEADER
+            ------------------------------------------------ */
+
+            lines.push(
+                "DESCRIPTION"
+            );
+
+
+            lines.push(
+                "QTY   PRICE       AMOUNT"
+            );
+
+
+            lines.push("");
+
+
+
+            /* -----------------------------------------------
+               ITEMS
+            ------------------------------------------------ */
+
+            receipt.items.forEach(
+                function (item) {
+
+                    wrap(
+                        String(
+                            item.name || "ITEM"
+                        )
+                        .toUpperCase()
+                    )
+                    .forEach(
+                        function (nameLine) {
+
+                            lines.push(
+                                nameLine
+                            );
+
+                        }
+                    );
+
+
+                    const qtyText =
+                        quantity(
+                            item.quantity
+                        );
+
+
+                    const unit =
+                        item.unit ||
+                        item.unitName ||
+                        "";
+
+
+                    const qtyWithUnit =
+                        unit
+                            ? qtyText + " " + unit
+                            : qtyText;
+
+
+                    const priceText =
+                        money(
+                            item.price
+                        );
+
+
+                    const amountText =
+                        money(
+                            item.total
+                        );
+
+
+                    let itemLine =
+                        qtyWithUnit
+                            .substring(
+                                0,
+                                8
+                            )
+                            .padEnd(
+                                8,
+                                " "
+                            );
+
+
+                    itemLine +=
+                        priceText
+                            .substring(
+                                0,
+                                14
+                            )
+                            .padEnd(
+                                14,
+                                " "
+                            );
+
+
+                    itemLine +=
+                        amountText;
+
+
+                    lines.push(
+                        itemLine
+                    );
+
+
+                    if (
+                        numberValue(
+                            item.discount
+                        ) > 0
+                    ) {
+
+                        lines.push(
+                            moneyLine(
+                                "  Discount",
+                                "-" +
+                                money(
+                                    item.discount
+                                )
+                            )
+                        );
+
+                    }
+
+
+                    lines.push("");
+
+                }
+            );
+
+
+            /* -----------------------------------------------
+               TOTALS
+            ------------------------------------------------ */
+
+            lines.push(
+                separator
+            );
+
+
+            lines.push(
+                moneyLine(
+                    "Subtotal",
+                    receipt.subtotal
+                )
+            );
+
+
+            lines.push(
+                leftRight(
+                    "Item discounts",
+                    "-" +
+                    money(
+                        receipt.itemDiscount
+                    )
+                )
+            );
+
+
+            lines.push(
+                leftRight(
+                    "Bill discount",
+                    "-" +
+                    money(
+                        receipt.billDiscount
+                    )
+                )
+            );
+
+
+            lines.push(
+                separator
+            );
+
+
+            lines.push(
+                leftRight(
+                    "TOTAL TZS",
+                    money(
+                        receipt.total
+                    )
+                )
+            );
+
+
+            lines.push(
+                leftRight(
+                    "Payment",
+                    String(
+                        receipt.payment
+                    ).toUpperCase()
+                )
+            );
+
+
+            lines.push(
+                separator
+            );
+
+
+            /* -----------------------------------------------
+               FOOTER
+            ------------------------------------------------ */
+
+            lines.push("");
+
+
+            wrap(
+                receipt.footer
+            )
+            .forEach(
+                function (line) {
+
+                    lines.push(
+                        center(line)
+                    );
+
+                }
+            );
+
+
+            lines.push("");
+
+
+            lines.push(
+                center(
+                    "Receipt: " +
+                    receipt.receiptNo
+                )
+            );
+
+
+            return lines.join(
+                "\n"
+            );
+
+        }
+
+
+
+        /* ====================================================
+           PREVIEW
+        ==================================================== */
+
+        const receiptText =
+            buildReceiptText();
+
+
+        receiptEl.textContent =
+            receiptText;
+
+
+
+        /* ====================================================
+           STATUS
+        ==================================================== */
+
+        function setStatus(
+            message,
+            error
+        ) {
+
+            statusEl.textContent =
+                message || "";
+
+
+            statusEl.className =
+                error
+                    ? "no-print error"
+                    : "no-print success";
+
+        }
+
+
+
+        /* ====================================================
+           CSRF
+        ==================================================== */
+
+        function csrfToken() {
+
+            const input =
+                document.querySelector(
+                    "#qzCsrfForm input[name='csrfmiddlewaretoken']"
+                );
+
+
+            return input
+                ? input.value
+                : "";
+
+        }
+
+
+
+        /* ====================================================
+           QZ SECURITY
+        ==================================================== */
+
+        function setupQzSecurity() {
+
+            if (
+                !window.qz ||
+                !qz.security
+            ) {
+
+                throw new Error(
+                    "QZ Tray security API is unavailable."
+                );
+
+            }
+
+
+            qz.security.setSignatureAlgorithm(
+                "SHA512"
+            );
+
+
+
+            qz.security.setCertificatePromise(
+                function (
+                    resolve,
+                    reject
+                ) {
+
+                    fetch(
+                        "{% url 'qz_certificate' %}",
+                        {
+
+                            method:
+                                "GET",
+
+                            cache:
+                                "no-store",
+
+                            credentials:
+                                "same-origin",
+
+                            headers: {
+
+                                "Accept":
+                                    "text/plain"
+
+                            }
+
+                        }
+                    )
+
+                    .then(
+                        async function (
+                            response
+                        ) {
+
+                            const certificate =
+                                await response.text();
+
+
+                            if (
+                                !response.ok
+                            ) {
+
+                                throw new Error(
+                                    certificate ||
+                                    "Could not load QZ certificate."
+                                );
+
+                            }
+
+
+                            if (
+                                !certificate.trim()
+                            ) {
+
+                                throw new Error(
+                                    "QZ certificate is empty."
+                                );
+
+                            }
+
+
+                            resolve(
+                                certificate
+                            );
+
+                        }
+                    )
+
+                    .catch(
+                        reject
+                    );
+
+                }
+            );
+
+
+
+            qz.security.setSignaturePromise(
+                function (toSign) {
+
+                    return function (
+                        resolve,
+                        reject
+                    ) {
+
+                        fetch(
+                            "{% url 'qz_sign' %}",
+                            {
+
+                                method:
+                                    "POST",
+
+                                cache:
+                                    "no-store",
+
+                                credentials:
+                                    "same-origin",
+
+                                headers: {
+
+                                    "Content-Type":
+                                        "text/plain; charset=UTF-8",
+
+                                    "Accept":
+                                        "text/plain",
+
+                                    "X-CSRFToken":
+                                        csrfToken(),
+
+                                    "X-Requested-With":
+                                        "XMLHttpRequest"
+
+                                },
+
+                                body:
+                                    toSign
+
+                            }
+                        )
+
+                        .then(
+                            async function (
+                                response
+                            ) {
+
+                                const signature =
+                                    await response.text();
+
+
+                                if (
+                                    !response.ok
+                                ) {
+
+                                    throw new Error(
+                                        signature ||
+                                        "QZ signing failed."
+                                    );
+
+                                }
+
+
+                                if (
+                                    !signature.trim()
+                                ) {
+
+                                    throw new Error(
+                                        "QZ signature was empty."
+                                    );
+
+                                }
+
+
+                                resolve(
+                                    signature.trim()
+                                );
+
+                            }
+                        )
+
+                        .catch(
+                            reject
+                        );
+
+                    };
+
+                }
+            );
+
+        }
+
+
+
+        /* ====================================================
+           CONNECT
+        ==================================================== */
+
+        async function connectQz() {
+
+            if (
+                !window.qz
+            ) {
+
+                throw new Error(
+                    "qz-tray.js was not loaded."
+                );
+
+            }
+
+
+            setupQzSecurity();
+
+
+            if (
+                qz.websocket.isActive()
+            ) {
+
+                return;
+
+            }
+
+
+            await qz.websocket.connect(
+                {
+                    retries:
+                        3,
+
+                    delay:
+                        1
+                }
+            );
+
+        }
+
+
+
+        /* ====================================================
+           FIND XPRINTER
+        ==================================================== */
+
+        async function findPrinter() {
+
+            /*
+             * Exact configured printer first.
+             */
+            if (
+                PRINTER_NAME.trim()
+            ) {
+
+                try {
+
+                    return await qz.printers.find(
+                        PRINTER_NAME
+                    );
+
+                } catch (
+                    exactError
+                ) {
+
+                    console.warn(
+                        exactError
+                    );
+
+                }
+
+            }
+
+
+            const result =
+                await qz.printers.find();
+
+
+            const printers =
+                Array.isArray(result)
+                    ? result
+                    : [result];
+
+
+            console.log(
+                "Available printers:",
+                printers
+            );
+
+
+            const found =
+                printers.find(
+                    function (printer) {
+
+                        const name =
+                            String(
+                                printer || ""
+                            )
+                            .toLowerCase();
+
+
+                        return (
+
+                            name.includes(
+                                "xprinter"
+                            )
+
+                            ||
+
+                            name.includes(
+                                "x-printer"
+                            )
+
+                            ||
+
+                            name.startsWith(
+                                "xp-"
+                            )
+
+                            ||
+
+                            name.includes(
+                                " xp-"
+                            )
+
+                            ||
+
+                            name.includes(
+                                "thermal"
+                            )
+
+                            ||
+
+                            name.includes(
+                                "pos"
+                            )
+
+                        );
+
+                    }
+                );
+
+
+            if (found) {
+
+                return found;
+
+            }
+
+
+            if (
+                printers.length === 1
+            ) {
+
+                return printers[0];
+
+            }
+
+
+            throw new Error(
+                "XPrinter was not found. " +
+                "Available printers: " +
+                printers.join(", ")
+            );
+
+        }
+
+
+
+        /* ====================================================
+           UTF-8 TEXT -> BASE64
+        ==================================================== */
+
+        function textToBase64(
+            text
+        ) {
+
+            const bytes =
+                new TextEncoder()
+                    .encode(text);
+
+
+            let binary =
+                "";
+
+
+            for (
+                let i = 0;
+                i < bytes.length;
+                i += 1
+            ) {
+
+                binary +=
+                    String.fromCharCode(
+                        bytes[i]
+                    );
+
+            }
+
+
+            return window.btoa(
+                binary
+            );
+
+        }
+
+
+
+        /* ====================================================
+           PRINT
+        ==================================================== */
+
+        async function printReceipt() {
+
+            if (printing) {
+                return;
+            }
+
+
+            printing =
+                true;
+
+
+            printBtn.disabled =
+                true;
+
+
+            const originalText =
+                printBtn.textContent;
+
+
+            printBtn.textContent =
+                "Printing...";
+
+
+            setStatus(
+                "Connecting to QZ Tray...",
+                false
+            );
+
+
+            try {
+
+                await connectQz();
+
+
+                const printer =
+                    await findPrinter();
+
+
+                setStatus(
+                    "Printing to " +
+                    printer +
+                    "...",
+                    false
+                );
+
+
+                const config =
+                    qz.configs.create(
+                        printer,
+                        {
+
+                            encoding:
+                                "UTF-8",
+
+                            copies:
+                                1,
+
+                            margins:
+                                0,
+
+                            rasterize:
+                                false
+
+                        }
+                    );
+
+
+                const payload =
+                    receiptText.trimEnd()
+                    +
+                    "\n\n";
+
+
+                const base64Receipt =
+                    textToBase64(
+                        payload
+                    );
+
+
+                /*
+                 * SAME CLEAN PATTERN AS ADAMS MINI:
+                 *
+                 * ESC @       initialize
+                 * ESC t 16    code page
+                 * ESC ! 0     normal text
+                 * receipt
+                 * ESC d 3     feed
+                 * GS V 0      cut
+                 */
+
+                const printData = [
+
+                    {
+                        type:
+                            "raw",
+
+                        format:
+                            "hex",
+
+                        data:
+                            "1B40"
+                    },
+
+
+                    {
+                        type:
+                            "raw",
+
+                        format:
+                            "hex",
+
+                        data:
+                            "1B7410"
+                    },
+
+
+                    {
+                        type:
+                            "raw",
+
+                        format:
+                            "hex",
+
+                        data:
+                            "1B2100"
+                    },
+
+
+                    {
+                        type:
+                            "raw",
+
+                        format:
+                            "base64",
+
+                        data:
+                            base64Receipt
+                    },
+
+
+                    {
+                        type:
+                            "raw",
+
+                        format:
+                            "hex",
+
+                        data:
+                            "1B6403"
+                    },
+
+
+                    {
+                        type:
+                            "raw",
+
+                        format:
+                            "hex",
+
+                        data:
+                            "1D5600"
+                    }
+
+                ];
+
+
+                await qz.print(
+                    config,
+                    printData
+                );
+
+
+                setStatus(
+                    "Receipt printed successfully.",
+                    false
+                );
+
+
+            } catch (
+                error
+            ) {
+
+                console.error(
+                    "QZ ERROR:",
+                    error
+                );
+
+
+                const message =
+                    error &&
+                    error.message
+                        ? error.message
+                        : String(error);
+
+
+                setStatus(
+                    "Print failed: " +
+                    message,
+                    true
+                );
+
+
+                alert(
+                    "Printing error:\n\n" +
+                    message +
+                    "\n\nMake sure QZ Tray is running."
+                );
+
+
+            } finally {
+
+                printing =
+                    false;
+
+
+                printBtn.disabled =
+                    false;
+
+
+                printBtn.textContent =
+                    originalText;
+
+            }
+
+        }
+
+
+
+        /* ====================================================
+           BUTTON
+        ==================================================== */
+
+        printBtn.addEventListener(
+            "click",
+            printReceipt
+        );
+
+
+
+        /* ====================================================
+           CONSOLE TESTING
+        ==================================================== */
+
+        window.kiboshoPrinter = {
+
+            connect:
+                connectQz,
+
+
+            printers:
+                async function () {
+
+                    await connectQz();
+
+                    return qz.printers.find();
+
+                },
+
+
+            print:
+                printReceipt,
+
+
+            receipt:
+                function () {
+
+                    return receiptText;
+
+                }
+
+        };
+
+    }
+);
+
+</script>
+
+{% endblock %}

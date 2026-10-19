@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block page_title %}Transport vehicles{% endblock %}{% block content %}
+<div class="page-head"><div><h1>Fleet vehicles</h1><p>One fleet for HAMA NA KILASI. Vehicles are independent of Retail branches.</p></div>{% if transport_is_manager %}<a class="btn btn-primary" href="{% url 'transport:vehicle_new' %}">Add vehicle</a>{% endif %}</div>
+<form method="get" class="novman-filters card novman-panel"><label>Search<input name="q" class="form-control" value="{{ q }}" placeholder="Registration or make/model"></label><button class="btn btn-secondary">Search</button></form>
+<section class="card"><div class="table-wrap"><table><thead><tr><th>Registration</th><th>Type</th><th>Make / model</th><th>Capacity</th><th>Status</th><th></th></tr></thead><tbody>{% for x in rows %}<tr><td><strong>{{ x.registration }}</strong></td><td>{{ x.get_vehicle_type_display }}</td><td>{{ x.make_model }}</td><td>{{ x.capacity|default:'—' }}</td><td><span class="badge">{{ x.get_status_display }}</span></td><td>{% if transport_is_manager %}<a class="btn btn-secondary btn-sm" href="{% url 'transport:vehicle_edit' x.pk %}">Edit</a>{% endif %}</td></tr>{% empty %}<tr><td colspan="6" class="empty">No vehicles yet.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

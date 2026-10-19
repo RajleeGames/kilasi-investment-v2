@@ -1,0 +1,46 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}Sales{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Sales history</h1><p>Completed and voided transactions with discounts, payment methods and profit control.</p></div>
+  <a class="btn btn-primary" href="{% url 'pos' %}">New sale</a>
+</div>
+
+<!-- KILASI_PHASE9D_NATIVE_PAGER_V1_1: server-side filters -->
+<form method="get" class="novman-filters card novman-panel">
+<label>Receipt or customer<input class="form-control" name="q" type="search" maxlength="80" value="{{ q }}" placeholder="Search receipts, customers"></label>
+<label>From<input class="form-control" name="from" type="date" value="{{ from_day }}"></label>
+<label>To<input class="form-control" name="to" type="date" value="{{ to_day }}"></label>
+<button class="btn btn-primary" type="submit">Search</button>
+</form>
+<section class="card"><div class="table-wrap"><table>
+<thead><tr><th>Receipt</th><th>Date</th><th>Cashier</th><th>Customer</th><th>Payment</th><th>Discount</th><th>Total</th>{% if request.user.profile.role == 'admin' or request.user.is_superuser %}<th>Profit</th>{% endif %}<th>Status</th><th>Document</th></tr></thead>
+<tbody>
+{% for s in sales %}
+<tr>
+<td><a class="table-link" href="{% url 'sale_detail' s.id %}">{{ s.receipt_no }}</a></td>
+<td>{{ s.sold_at|date:'d M Y H:i' }}</td>
+<td>{{ s.cashier.get_full_name|default:s.cashier.username }}</td>
+<td>{% if s.customer %}<a class="table-link" href="{% url 'customer_detail' s.customer.id %}">{{ s.customer.name }}</a>{% elif s.customer_name %}{{ s.customer_name }}{% else %}—{% endif %}</td>
+<td>{{ s.get_payment_method_display }}</td>
+<td>{{ s.item_discount_total|add:s.sale_discount|money }}</td>
+<td><strong>{{ s.grand_total|money }}</strong></td>
+{% if request.user.profile.role == 'admin' or request.user.is_superuser %}<td>{{ s.profit_total|money }}</td>{% endif %}
+<td><span class="badge {{ s.status }}">{{ s.get_status_display }}</span></td><td><a class="btn btn-secondary btn-sm" href="{% url 'kilasi_sales_document' s.pk %}">A4 copy</a></td>
+</tr>
+{% empty %}<tr><td colspan="9" class="empty">No sales yet.</td></tr>{% endfor %}
+</tbody></table></div></section>
+
+<!-- KILASI_PHASE9D_NATIVE_PAGER_V1_1: native Retail sales -->
+{% if page_obj and page_obj.paginator.num_pages > 1 %}
+<div class="head-actions" style="padding:12px;justify-content:space-between;flex-wrap:wrap;gap:8px">
+  <span>Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} · {{ page_obj.paginator.count }} receipts</span>
+  <span>
+    {% if kilasi_page_first %}<a class="btn btn-secondary btn-sm" href="{{ kilasi_page_first }}">First</a>{% endif %}
+    {% if kilasi_page_prev %}<a class="btn btn-secondary btn-sm" href="{{ kilasi_page_prev }}">Previous</a>{% endif %}
+    {% if kilasi_page_next %}<a class="btn btn-secondary btn-sm" href="{{ kilasi_page_next }}">Next</a>{% endif %}
+    {% if kilasi_page_last %}<a class="btn btn-secondary btn-sm" href="{{ kilasi_page_last }}">Last</a>{% endif %}
+  </span>
+</div>
+{% endif %}
+{% endblock %}

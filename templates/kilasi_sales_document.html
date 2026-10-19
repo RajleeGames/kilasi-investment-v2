@@ -1,0 +1,19 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block body_class %}ki-invoice-page{% endblock %}
+{% block title %}Sales document {{ sale.receipt_no }} · {{ shop.name }}{% endblock %}
+{% block page_title %}Sales document{% endblock %}
+{% block content %}
+<!-- KILASI_V2_PHASE3_FINANCE -->
+<div class="page-head ki-print-actions"><div><h1>Sales document</h1><p>A printable copy of an existing transaction. This does not create a new sale or invoice.</p></div><div class="head-actions"><a href="{% url 'sale_detail' sale.pk %}" class="btn btn-secondary">Back to receipt</a><button type="button" onclick="window.print()" class="btn btn-primary">Print A4</button></div></div>
+<section class="card ki-invoice" aria-label="Transaction document">
+ <header class="ki-invoice-header"><div class="ki-invoice-brand">{% if shop.logo %}<img src="{{ shop.logo.url }}" alt="{{ shop.name }} logo">{% endif %}<div><h1>{{ shop.name }}</h1><p>{{ shop.address|default:'' }}</p><p>{{ shop.phone|default:'' }}</p></div></div><div class="ki-invoice-number"><span>SALE DOCUMENT</span><strong>{{ sale.receipt_no }}</strong><small>Non-fiscal transaction copy</small></div></header>
+ {% if sale.status == 'voided' %}<div class="ki-invoice-void"><strong>VOIDED / CANCELLED</strong> — This sale was reversed. Not a valid active sale.</div>{% endif %}
+ <div class="ki-invoice-meta"><div><span>Customer</span><strong>{{ sale.customer.name|default:sale.customer_name|default:'Walk-in customer' }}</strong>{% if sale.customer.phone %}<small>{{ sale.customer.phone }}</small>{% endif %}</div><div><span>Branch</span><strong>{{ branch.name }}</strong><small>{{ sale.sold_at|date:'d M Y H:i' }}</small></div><div><span>Cashier</span><strong>{{ sale.cashier.get_full_name|default:sale.cashier.username }}</strong><small>Payment: {{ sale.get_payment_method_display }}</small></div></div>
+ <div class="table-wrap"><table class="ki-invoice-table"><thead><tr><th>Item / service</th><th>Qty</th><th>Unit</th><th class="ki-right">Unit price</th><th class="ki-right">Discount</th><th class="ki-right">Amount</th></tr></thead><tbody>
+ {% for item in sale.items.all %}<tr><td><strong>{{ item.product.name }}</strong></td><td>{{ item.quantity|qty }}</td><td>{{ item.unit.symbol }}</td><td class="ki-right">{{ item.normal_unit_price|money }}</td><td class="ki-right">{{ item.discount_amount|money }}</td><td class="ki-right">{{ item.final_total|money }}</td></tr>{% empty %}<tr><td colspan="6">No items.</td></tr>{% endfor %}
+ </tbody></table></div>
+ <div class="ki-invoice-bottom"><div class="ki-invoice-note"><strong>Notes</strong><p>This document reproduces an existing recorded sale. It is not an EFD/fiscal tax invoice. VAT, TIN and VRN are not asserted because this system has not yet configured fiscal details.</p>{% if sale.payment_method == 'debt' %}<p>Sale recorded on credit. Confirm the customer's current outstanding balance and repayments in the customer debt ledger; this document does not allocate repayments to this specific sale.</p>{% endif %}</div>
+ <div class="ki-invoice-totals"><div><span>Subtotal</span><strong>{{ sale.subtotal|money }} TZS</strong></div><div><span>Line discounts</span><strong>-{{ sale.item_discount_total|money }} TZS</strong></div><div><span>Bill discount</span><strong>-{{ sale.sale_discount|money }} TZS</strong></div><div class="ki-invoice-total"><span>Sale total</span><strong>{{ sale.grand_total|money }} TZS</strong></div></div></div>
+ <footer class="ki-invoice-footer"><span>{{ shop.receipt_footer|default:'Thank you for your business.' }}</span><span>Printed copy · {{ sale.receipt_no }}</span></footer>
+</section>
+{% endblock %}

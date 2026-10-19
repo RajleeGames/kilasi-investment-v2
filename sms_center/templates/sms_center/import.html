@@ -1,0 +1,12 @@
+{% extends "sms_center/shell.html" %}
+{% block title %}Import SMS Contacts · {{ shop.name }}{% endblock %}
+{% block page_title %}Import SMS Contacts{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Import contacts</h1><p>Upload a CSV with customer names and phone numbers.</p></div><a class="btn btn-secondary" href="{% url 'sms_center:sample_csv' %}">Download sample CSV</a></div>
+{% include "sms_center/_nav.html" %}
+<div class="sms-import-grid">
+<section class="card sms-import-card"><h2>CSV upload</h2><form method="post" enctype="multipart/form-data" class="sms-model-form">{% csrf_token %}<label>CSV file<input class="form-control" type="file" name="csv_file" accept=".csv,text/csv" required></label><label>Default group<input class="form-control" name="group_name" placeholder="e.g. VIP Customers"></label><label class="sms-inline-check"><input type="checkbox" name="update_existing"> Update matching existing contacts</label><button class="btn btn-primary" type="submit">Import contacts</button></form></section>
+<aside class="card sms-import-help"><h2>Required format</h2><p>The CSV needs a phone column. Accepted headings include <b>phone</b>, <b>mobile</b>, <b>number</b> or <b>phone_number</b>.</p><p>Optional columns: <b>name</b> and <b>group</b>.</p><p>Tanzanian local numbers such as 0712345678 are converted to 255712345678 automatically.</p></aside>
+</div>
+<section class="card section-gap"><div class="card-head"><h2>Recent imports</h2></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>File</th><th>Rows</th><th>Added</th><th>Updated</th><th>Skipped</th><th>Errors</th></tr></thead><tbody>{% for item in recent_imports %}<tr><td>{{ item.created_at|date:"d M Y H:i" }}</td><td>{{ item.filename }}</td><td>{{ item.total_rows }}</td><td>{{ item.imported_count }}</td><td>{{ item.updated_count }}</td><td>{{ item.skipped_count }}</td><td>{{ item.error_count }}</td></tr>{% empty %}<tr><td colspan="7" class="empty">No CSV imports yet.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

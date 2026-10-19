@@ -1,0 +1,99 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}Products{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Products</h1><p>Manage products, categories, selling units and current prices.</p></div>
+  <div class="head-actions">
+    <button class="btn btn-secondary" type="button" data-open-modal="manageCategoriesModal">Categories</button>
+    <button class="btn btn-secondary" type="button" data-open-modal="categoryModal">Add category</button>
+    <a href="{% url 'product_create' %}" class="btn btn-primary">Add product</a>
+  </div>
+</div>
+
+<div class="toolbar card compact">
+  <form method="get" class="inline-search product-search">
+    <input class="form-control" name="q" value="{{ q }}" placeholder="Search product or category">
+    <button class="btn btn-secondary">Search</button>
+    {% if q %}<a class="btn btn-ghost" href="{% url 'products' %}">Clear</a>{% endif %}
+  </form>
+</div>
+
+<section class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Product</th><th>Category</th><th>Stock</th><th>Selling units</th><th>Status</th><th class="align-right">Actions</th></tr></thead>
+      <tbody>
+        {% for p in products %}
+        <tr>
+          <td><span class="table-primary">{{ p.name }}</span><small class="cell-sub">Base: {{ p.base_unit }}</small></td>
+          <td>{{ p.category.name }}</td>
+          <td>{{ p.stock_qty|qty }} {{ p.base_unit }}</td>
+          <td><div class="unit-tags">{% for u in p.selling_units.all %}<span class="{% if not u.is_active %}muted-tag{% endif %}">{{ u.name }} · {{ u.selling_price|money }}</span>{% empty %}<span class="warn-text">No selling unit</span>{% endfor %}</div></td>
+          <td><span class="badge {% if p.is_active %}completed{% else %}voided{% endif %}">{% if p.is_active %}Active{% else %}Archived{% endif %}</span></td>
+          <td>
+            <div class="row-actions">
+              <a class="btn btn-secondary btn-sm" href="{% url 'product_edit' p.id %}">Edit</a>
+              <form method="post" action="{% url 'product_toggle' p.id %}">{% csrf_token %}<button class="btn btn-ghost btn-sm" type="submit">{% if p.is_active %}Archive{% else %}Activate{% endif %}</button></form>
+              <button class="btn btn-danger-soft btn-sm" type="button"
+                      data-confirm-url="{% url 'product_delete' p.id %}"
+                      data-confirm-title="Delete {{ p.name }}?"
+                      data-confirm-text="If this product has sales or stock history, Mega Fish Point will archive it instead so your reports stay correct."
+                      data-confirm-label="Delete / archive">Delete</button>
+            </div>
+          </td>
+        </tr>
+        {% empty %}<tr><td colspan="6" class="empty">No products found.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="modal" id="categoryModal" role="dialog" aria-modal="true" aria-labelledby="categoryModalTitle">
+  <div class="modal-card modal-small">
+    <div class="modal-head">
+      <div><h2 id="categoryModalTitle">Add category</h2><p>Create a simple product category.</p></div>
+      <button class="modal-close" type="button" data-close-modal="categoryModal" aria-label="Close">×</button>
+    </div>
+    <form method="post" action="{% url 'category_create' %}" class="form-body modal-form">
+      {% csrf_token %}
+      <input type="hidden" name="is_active" value="on">
+      <label>Category name<input class="form-control" name="name" placeholder="e.g. Fish" required></label>
+      <div class="modal-actions"><button class="btn btn-secondary" type="button" data-close-modal="categoryModal">Cancel</button><button class="btn btn-primary" type="submit">Add category</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="manageCategoriesModal" role="dialog" aria-modal="true" aria-labelledby="manageCategoriesTitle">
+  <div class="modal-card modal-wide">
+    <div class="modal-head">
+      <div><h2 id="manageCategoriesTitle">Manage categories</h2><p>Edit names, archive unused groups, or remove categories that have no products.</p></div>
+      <button class="modal-close" type="button" data-close-modal="manageCategoriesModal" aria-label="Close">×</button>
+    </div>
+    <div class="modal-table-wrap">
+      <table>
+        <thead><tr><th>Name</th><th>Products</th><th>Active</th><th class="align-right">Actions</th></tr></thead>
+        <tbody>
+        {% for c in categories %}
+          <tr>
+            <td><input class="table-input" name="name" value="{{ c.name }}" form="cat-form-{{ c.id }}" required></td>
+            <td>{{ c.product_count }}</td>
+            <td><input class="table-check" type="checkbox" name="is_active" form="cat-form-{{ c.id }}" {% if c.is_active %}checked{% endif %}></td>
+            <td>
+              <form id="cat-form-{{ c.id }}" method="post" action="{% url 'category_update' c.id %}">{% csrf_token %}</form>
+              <div class="row-actions">
+                <button class="btn btn-secondary btn-sm" type="submit" form="cat-form-{{ c.id }}">Save</button>
+                <button class="btn btn-danger-soft btn-sm" type="button"
+                        data-confirm-url="{% url 'category_delete' c.id %}"
+                        data-confirm-title="Delete {{ c.name }}?"
+                        data-confirm-text="Categories already used by products are archived instead of permanently removed."
+                        data-confirm-label="Delete / archive">Delete</button>
+              </div>
+            </td>
+          </tr>
+        {% empty %}<tr><td colspan="4" class="empty">No categories yet.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

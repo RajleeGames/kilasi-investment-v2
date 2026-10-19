@@ -1,0 +1,16 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}Customer Orders{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Customer Orders</h1><p>{{ branch.name }} · Custom furniture, electronics and mattress requests; deposits are not POS sales.</p></div><div class="head-actions"><a class="btn btn-secondary" href="{% url 'kilasi_orders:returns' %}">Sales returns</a><a class="btn btn-primary" href="{% url 'kilasi_orders:new' %}">New order</a></div></div>
+<div class="novman-stat-grid">
+<article class="novman-stat"><label>All orders</label><strong>{{ total_orders }}</strong></article>
+<article class="novman-stat"><label>Active order value</label><strong>{{ active_value|money }} TZS</strong></article>
+<article class="novman-stat"><label>Deposits collected</label><strong>{{ deposits|money }} TZS</strong></article>
+<article class="novman-stat"><label>Unpaid order value</label><strong>{{ unpaid|money }} TZS</strong></article>
+</div>
+<form class="novman-filters" method="get"><label>Search<input class="form-control" name="q" value="{{ q }}" placeholder="Customer, phone or product"></label><label>Status<select class="form-control" name="status"><option value="">All statuses</option>{% for key,label in status_choices %}<option value="{{ key }}" {% if status == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label><button class="btn btn-primary" type="submit">Filter</button></form>
+<section class="card"><div class="table-wrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Product / request</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th></th></tr></thead><tbody>
+{% for o in rows %}<tr><td><a class="table-link" href="{% url 'kilasi_orders:order_detail' o.pk %}">{{ o.order_no }}</a><small class="cell-sub">{{ o.created_at|date:'d M Y' }}</small></td><td>{{ o.customer_name }}<small class="cell-sub">{{ o.customer_phone }}</small></td><td>{{ o.product_name }}</td><td>{{ o.total_amount|money }}</td><td>{{ o.paid_amount|money }}</td><td>{{ o.balance|money }}</td><td><span class="badge">{{ o.get_order_status_display }}</span></td><td><a class="btn btn-secondary btn-sm" href="{% url 'kilasi_orders:order_detail' o.pk %}">Details</a></td></tr>
+{% empty %}<tr><td colspan="8" class="empty">No customer orders found.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

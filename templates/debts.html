@@ -1,0 +1,20 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}Debts & Customers{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Debts & customers</h1><p>Track credit sales, outstanding balances and customer repayments.</p></div><a class="btn btn-primary" href="{% url 'pos' %}">New sale</a></div>
+<div class="debt-kpi-grid">
+  <article class="dashboard-kpi"><div class="dashboard-kpi-top"><span>Outstanding debt</span><span class="kpi-mini">{{ debtor_count }} debtors</span></div><div class="dashboard-kpi-value">{{ total_outstanding|money }} <small>TZS</small></div><div class="dashboard-kpi-foot">Current unpaid customer balances</div></article>
+  <article class="dashboard-kpi"><div class="dashboard-kpi-top"><span>Total credit sales</span><span class="kpi-mini">All time</span></div><div class="dashboard-kpi-value">{{ total_credit_sales|money }} <small>TZS</small></div><div class="dashboard-kpi-foot">Completed debt sales</div></article>
+  <article class="dashboard-kpi"><div class="dashboard-kpi-top"><span>Collected this month</span><span class="kpi-mini">Repayments</span></div><div class="dashboard-kpi-value">{{ collected_month|money }} <small>TZS</small></div><div class="dashboard-kpi-foot">Does not count as new sales revenue</div></article>
+</div>
+<section class="card">
+  <div class="debt-toolbar">
+    <form method="get" class="debt-search"><input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Search customer, phone or email"><input type="hidden" name="show" value="{{ show }}"><button class="btn btn-secondary" type="submit">Search</button></form>
+    <div class="debt-tabs"><a href="?show=debtors{% if q %}&amp;q={{ q|urlencode }}{% endif %}" class="{% if show != 'all' %}active{% endif %}">Debtors</a><a href="?show=all{% if q %}&amp;q={{ q|urlencode }}{% endif %}" class="{% if show == 'all' %}active{% endif %}">All customers</a></div>
+  </div>
+  <div class="table-wrap"><table><thead><tr><th>Customer</th><th>Phone</th><th>Credit sales</th><th>Paid</th><th>Balance</th><th>Status</th><th></th></tr></thead><tbody>
+    {% for c in customers %}<tr><td><a class="table-link" href="{% url 'customer_detail' c.id %}">{{ c.name }}</a>{% if c.email %}<span class="cell-sub">{{ c.email }}</span>{% endif %}</td><td>{{ c.phone|default:'—' }}</td><td>{{ c.dashboard_credit|money }} TZS</td><td>{{ c.dashboard_paid|money }} TZS</td><td><strong class="{% if c.dashboard_balance > 0 %}debt-amount{% endif %}">{{ c.dashboard_balance|money }} TZS</strong></td><td>{% if not c.is_active %}<span class="badge voided">Inactive</span>{% elif c.dashboard_balance > 0 %}<span class="badge low">Debtor</span>{% else %}<span class="badge completed">Clear</span>{% endif %}</td><td class="align-right"><a class="btn btn-secondary btn-sm" href="{% url 'customer_detail' c.id %}">Open</a></td></tr>
+    {% empty %}<tr><td colspan="7" class="empty">No customers match this view.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+{% endblock %}

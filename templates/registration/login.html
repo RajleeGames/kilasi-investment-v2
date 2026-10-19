@@ -1,0 +1,101 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Sign in{% if shop.name %} · {{ shop.name }}{% endif %}</title>
+  <link rel="stylesheet" href="{% static 'core/app.css' %}?v=18">
+</head>
+<body class="login-body">
+
+  <div class="mfp-page-loader" id="mfpPageLoader" aria-hidden="true">
+    <div class="mfp-loader-content" role="status" aria-live="polite">
+      <div class="mfp-loader-symbol" aria-hidden="true">
+        <span class="mfp-loader-ring"></span>
+        {% if shop.logo %}
+          <span class="mfp-loader-logo"><img src="{{ shop.logo.url }}" alt=""></span>
+        {% else %}
+          <span class="mfp-loader-fallback">KI</span>
+        {% endif %}
+      </div>
+      <span class="mfp-loader-text" id="mfpPageLoaderText">Signing in…</span>
+    </div>
+  </div>
+
+  <main class="login-card">
+    <div class="login-brand">
+      {% if shop.logo %}
+        <span class="login-logo"><img src="{{ shop.logo.url }}" alt="{{ shop.name }} logo"></span>
+      {% else %}
+        <span class="login-fallback">KI</span>
+      {% endif %}
+
+      <div class="login-shop-copy">
+        <span class="login-shop-name">{{ shop.name|default:"Kilasi Investment" }}</span>
+        <span class="login-shop-sub">Retail &amp; Business Management</span>
+      </div>
+    </div>
+
+    <div class="login-heading">
+      <h1>Sign in</h1>
+      <p>Enter your account details to continue.</p>
+    </div>
+
+    {% if messages %}
+      <div class="login-messages">
+        {% for message in messages %}
+          <div class="alert {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <form method="post" class="login-form" autocomplete="on" data-loading-message="Signing in…">
+      {% csrf_token %}
+
+      <label>
+        <span>Username</span>
+        <input
+          class="form-control"
+          type="text"
+          name="username"
+          autocomplete="username"
+          required
+          autofocus
+          placeholder="Enter username"
+        >
+      </label>
+
+      <label>
+        <span>Password</span>
+        <div class="password-wrap">
+          <input
+            class="form-control"
+            type="password"
+            name="password"
+            id="loginPassword"
+            autocomplete="current-password"
+            required
+            placeholder="Enter password"
+          >
+          <button
+            type="button"
+            class="password-toggle"
+            data-password-toggle="loginPassword"
+          >Show</button>
+        </div>
+      </label>
+
+      <button
+        class="btn btn-primary btn-block login-submit"
+        type="submit"
+        data-loading-label="Signing in…"
+      >Sign in</button>
+    </form>
+
+    <div class="login-footer">{{ shop.name|default:"Kilasi Investment" }}</div>
+  </main>
+
+  <script src="{% static 'core/app.js' %}?v=18"></script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+{% extends "sms_center/shell.html" %}
+{% block title %}Send SMS · {{ shop.name }}{% endblock %}
+{% block page_title %}Send SMS{% endblock %}
+{% block content %}
+<div class="page-head sms-page-head">
+  <div><h1>Send customer message</h1><p>Select POS customers, saved contacts or manual phone numbers. Personalize using customer names.</p></div>
+  <div class="head-actions"><a class="btn btn-secondary" href="{% url 'sms_center:import_contacts' %}">Import CSV</a><a class="btn btn-secondary" href="{% url 'sms_center:history' %}">History</a></div>
+</div>
+{% include "sms_center/_nav.html" %}
+
+<form method="post" class="sms-compose" data-sms-compose>
+  {% csrf_token %}
+  <div class="sms-compose-main">
+    <section class="card sms-compose-panel">
+      <div class="sms-step-head"><span class="sms-step-number">01</span><div><h2>Choose recipients</h2><p>Kilasi Investment customers are loaded from the existing POS customer list.</p></div><span class="sms-count-pill"><b data-sms-selected-count>0</b> selected</span></div>
+      <div class="sms-audience-toolbar">
+        <div class="sms-source-tabs"><button type="button" class="active" data-sms-source="customer">System customers</button><button type="button" data-sms-source="contact">SMS contacts</button></div>
+        <div><button type="button" class="sms-mini-btn" data-sms-select-visible>Select visible</button><button type="button" class="sms-mini-btn" data-sms-clear-selection>Clear</button></div>
+      </div>
+      <input class="form-control sms-recipient-search" type="search" placeholder="Search name, phone or group..." data-sms-recipient-search>
+      <div class="sms-recipient-list">
+        {% for customer in customers %}
+          <label class="sms-recipient-row {% if customer.blocked %}is-disabled{% endif %}" data-sms-recipient data-source="customer" data-search="{{ customer.name|lower }} {{ customer.phone|lower }} {{ customer.normalized }}">
+            <input type="checkbox" name="recipients" value="customer:{{ customer.id }}" data-sms-recipient-check {% if customer.preselected and not customer.blocked %}checked{% endif %} {% if customer.blocked %}disabled{% endif %}>
+            <span class="sms-recipient-avatar">{{ customer.name|first|upper }}</span><span class="sms-recipient-copy"><strong>{{ customer.name }}</strong><small>{{ customer.phone }} · POS customer</small></span><span class="sms-check-ui">✓</span>
+          </label>
+        {% empty %}<div class="sms-empty-state" data-source-empty="customer">No customers with valid phone numbers.</div>{% endfor %}
+        {% for contact in contacts %}
+          <label class="sms-recipient-row is-hidden-source" data-sms-recipient data-source="contact" data-search="{{ contact.name|lower }} {{ contact.phone|lower }} {{ contact.normalized_phone }} {{ contact.group_name|lower }}">
+            <input type="checkbox" name="recipients" value="contact:{{ contact.id }}" data-sms-recipient-check>
+            <span class="sms-recipient-avatar">{{ contact.name|first|default:"#"|upper }}</span><span class="sms-recipient-copy"><strong>{{ contact.name|default:"Saved contact" }}</strong><small>{{ contact.phone }}{% if contact.group_name %} · {{ contact.group_name }}{% endif %}</small></span><span class="sms-check-ui">✓</span>
+          </label>
+        {% empty %}<div class="sms-empty-state is-hidden-source" data-source-empty="contact">No saved SMS contacts.</div>{% endfor %}
+      </div>
+
+      <details class="sms-manual-box"><summary>+ Add manual numbers</summary><div class="sms-manual-body">
+        <label>Numbers<textarea class="form-control" name="manual_recipients" rows="4" placeholder="0712345678&#10;Asha, 0754000000"></textarea></label>
+        <div class="sms-manual-options"><label class="sms-inline-check"><input type="checkbox" name="save_manual"> Save valid numbers</label><input class="form-control" name="manual_group" placeholder="Optional group"></div>
+      </div></details>
+    </section>
+
+    <section class="card sms-compose-panel">
+      <div class="sms-step-head"><span class="sms-step-number">02</span><div><h2>Write message</h2><p>Use a template or write a new customer message.</p></div></div>
+      <div class="sms-message-grid"><label>Campaign title<input class="form-control" name="title" placeholder="e.g. New motorcycle spare-parts arrival"></label><label>Sender ID<select class="form-control" name="sender_id" required>{% for sender in sender_options %}<option value="{{ sender.value }}" {% if sender.default %}selected{% endif %}>{{ sender.label }}</option>{% endfor %}</select></label></div>
+      <label class="sms-template-select">Template<select class="form-control" data-sms-template-select><option value="">Write a new message</option>{% for template in templates %}<option value="{{ template.pk }}" data-body="{{ template.body|escape }}" {% if initial_template and initial_template.pk == template.pk %}selected{% endif %}>{{ template.name }}{% if template.category %} · {{ template.category }}{% endif %}</option>{% endfor %}</select></label>
+      <div class="sms-editor-shell"><textarea class="sms-editor" name="message" maxlength="1000" required data-sms-message placeholder="Hello {first_name}, KILASI INVESTMENT has new motorcycle parts in stock...">{% if initial_template %}{{ initial_template.body }}{% endif %}</textarea><div class="sms-editor-footer"><div class="sms-token-row"><button type="button" data-sms-token="{name}">{name}</button><button type="button" data-sms-token="{first_name}">{first_name}</button><button type="button" data-sms-token="{phone}">{phone}</button></div><div><b data-sms-char-count>0</b>/1000 · <b data-sms-segment-count>0</b> segment(s)</div></div></div>
+      <div class="sms-preview-box"><span>Preview</span><p data-sms-preview>Your message preview will appear here.</p></div>
+    </section>
+  </div>
+
+  <aside class="card sms-send-summary">
+    <span class="sms-eyebrow">LIVE SUMMARY</span><h2>Ready to send</h2><p>Review the estimated SMS usage before sending.</p>
+    <div class="sms-summary-balance"><div><span>Beem balance</span><strong data-sms-balance-value>{{ sms_balance.display }}</strong></div><button type="button" data-sms-refresh-balance data-url="{% url 'sms_center:balance' %}">↻</button></div>
+    <div class="sms-summary-list"><div><span>Saved recipients</span><strong data-sms-summary-recipients>0</strong></div><div><span>Characters</span><strong data-sms-summary-chars>0</strong></div><div><span>Segments / recipient</span><strong data-sms-summary-segments>0</strong></div><div class="total"><span>Estimated units</span><strong data-sms-estimated-units>0</strong></div></div>
+    <div class="sms-client-error" data-sms-client-error hidden></div>
+    {% if not provider_configured %}<div class="sms-provider-warning"><strong>Beem is not configured</strong><span>Add API credentials in the server environment first.</span></div>{% endif %}
+    <button class="btn btn-primary btn-block" type="submit" {% if not provider_configured %}disabled{% endif %}>Send SMS</button><small>Maximum {{ max_recipients }} recipients per campaign.</small>
+  </aside>
+</form>
+{% endblock %}

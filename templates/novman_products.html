@@ -1,0 +1,28 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block page_title %}Products{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Retail products</h1><p>Furniture, electronics, mattresses and other merchandise. Stock shown for {{ branch.name }}.</p></div><div class="head-actions"><a class="btn btn-secondary" href="{% url 'retail_overview' %}">Retail overview</a><a class="btn btn-primary" href="{% url 'product_create' %}">Add product</a></div></div>
+<form method="get" class="novman-filters">
+  <label>Search<input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Product, barcode or category"></label>
+  <label>Retail division<select class="form-control" name="division"><option value="">All divisions</option>{% for code,label in division_choices %}<option value="{{ code }}" {% if division == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+  <button class="btn btn-primary">Apply filters</button>
+  <a class="btn btn-secondary" href="{% url 'products' %}">Clear</a>
+</form>
+<section class="card"><div class="table-wrap"><table><thead><tr><th>Product</th><th>Retail division</th><th>Barcode</th><th>Category</th><th>Supplier</th><th>Buying price</th><th>Selling price</th><th>Branch qty</th><th></th></tr></thead><tbody>
+{% for row in rows %}<tr><td><strong>{{ row.product.name }}</strong><small class="cell-sub">ID {{ row.product.id }}</small></td><td>{{ row.product.get_retail_division_display }}</td><td>{{ row.product.barcode|default:'—' }}</td><td>{{ row.product.category.name }}</td><td>{{ row.product.supplier.name|default:'—' }}</td><td>{{ row.product.last_buying_price|money }}</td><td>{% if row.unit %}{{ row.unit.selling_price|money }}{% else %}—{% endif %}</td><td>{{ row.quantity|qty }}</td><td><a class="btn btn-secondary btn-sm" href="{% url 'product_edit' row.product.id %}">Edit</a></td></tr>
+{% empty %}<tr><td colspan="9" class="empty">No products found for this filter.</td></tr>{% endfor %}
+</tbody></table></div></section>
+
+<!-- KILASI_PHASE9D_NATIVE_PAGER_V1_1: native Retail products -->
+{% if page_obj and page_obj.paginator.num_pages > 1 %}
+<div class="head-actions" style="padding:12px;justify-content:space-between;flex-wrap:wrap;gap:8px">
+  <span>Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} · {{ page_obj.paginator.count }} products</span>
+  <span>
+    {% if kilasi_page_first %}<a class="btn btn-secondary btn-sm" href="{{ kilasi_page_first }}">First</a>{% endif %}
+    {% if kilasi_page_prev %}<a class="btn btn-secondary btn-sm" href="{{ kilasi_page_prev }}">Previous</a>{% endif %}
+    {% if kilasi_page_next %}<a class="btn btn-secondary btn-sm" href="{{ kilasi_page_next }}">Next</a>{% endif %}
+    {% if kilasi_page_last %}<a class="btn btn-secondary btn-sm" href="{{ kilasi_page_last }}">Last</a>{% endif %}
+  </span>
+</div>
+{% endif %}
+{% endblock %}

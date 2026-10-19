@@ -1,0 +1,7 @@
+{% extends 'base.html' %}{% load mfp %}{% block page_title %}{{ ret.return_no }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ ret.return_no }}</h1><p>{{ branch.name }} · Original receipt {{ ret.sale.receipt_no }}</p></div><a href="{% url 'kilasi_orders:returns' %}" class="btn btn-secondary">All returns</a></div>
+<div class="novman-stat-grid"><article class="novman-stat"><label>Refund recorded</label><strong>{{ ret.total_refund|money }} TZS</strong></article><article class="novman-stat"><label>FIFO cost restored</label><strong>{{ ret.stock_cost_restored|money }} TZS</strong></article></div>
+<section class="card"><div class="card-head"><h2>Return details</h2></div><div class="form-body"><p><strong>Reason:</strong> {{ ret.reason }}</p><p><strong>Refund method:</strong> {{ ret.get_refund_method_display }}</p><p><strong>Reference:</strong> {{ ret.refund_reference|default:'—' }}</p><p><strong>Recorded by:</strong> {{ ret.created_by.username }} · {{ ret.created_at|date:'d M Y H:i' }}</p></div>
+<div class="table-wrap"><table><thead><tr><th>Product</th><th>Returned qty</th><th>Customer refund</th><th>Restocked</th><th>FIFO cost</th></tr></thead><tbody>{% for line in ret.lines.all %}<tr><td>{{ line.sale_item.product.name }}</td><td>{{ line.quantity|qty }}</td><td>{{ line.refund_amount|money }}</td><td>{% if line.restocked %}Yes{% else %}No{% endif %}</td><td>{{ line.cost_restored|money }}</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

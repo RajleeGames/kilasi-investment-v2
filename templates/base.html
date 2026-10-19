@@ -1,0 +1,295 @@
+{% load static %}{% load mfp %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- KILASI_V2_PHASE1_BRANDING -->
+  <title>{% block title %}{{ shop.name }}{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'core/app.css' %}?v=30">
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="app-body {% block body_class %}{% endblock %}">
+<div class="mfp-page-loader" id="mfpPageLoader" aria-hidden="true">
+  <div class="mfp-loader-content" role="status" aria-live="polite">
+    <div class="mfp-loader-symbol" aria-hidden="true">
+      <span class="mfp-loader-ring"></span>
+      {% if shop.logo %}
+        <span class="mfp-loader-logo"><img src="{{ shop.logo.url }}" alt=""></span>
+      {% else %}
+        <span class="mfp-loader-fallback">KI</span>
+      {% endif %}
+    </div>
+    <span class="mfp-loader-text" id="mfpPageLoaderText">Loading…</span>
+  </div>
+</div>
+
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar" aria-label="Main sidebar">
+    <div class="sidebar-inner">
+      <a class="brand" href="{% if transport_membership %}{% url 'transport:home' %}{% elif novman_can_switch_branch %}{% url 'dashboard' %}{% else %}{% url 'pos' %}{% endif %}" title="{{ shop.name }}">
+        {% if shop.logo %}
+          <span class="brand-logo"><img src="{{ shop.logo.url }}" alt="{{ shop.name }} logo"></span>
+        {% else %}
+          <span class="brand-logo"><img src="{% static 'core/brand/kilasi-sidebar.jpg' %}" alt="KILASI Investment"></span>
+        {% endif %}
+        <span class="brand-copy">
+          <span class="brand-name">{{ shop.name }}</span>
+          <span class="brand-sub">Retail Management</span>
+        </span>
+      </a>
+
+      <nav class="nav-list" aria-label="Main navigation">
+        <!-- KILASI_V2_PHASE6B_SIDEBAR: Dashboards, Business, Inventory, Trade, HAMA NA KILASI, SMS, Admin -->
+        {% if transport_membership %}
+          <a href="{% url 'transport:home' %}" class="nav-item nav-direct {% if request.resolver_match.namespace == 'transport' and request.resolver_match.url_name == 'home' %}active{% endif %}"><span class="ico" data-icon="dashboard"></span><span class="nav-label">HAMA NA KILASI Dashboard</span></a>
+          <div class="nav-group {% if request.resolver_match.namespace == 'transport' %}open active-group{% endif %}" data-nav-group="hama-na-kilasi">
+            <button type="button" class="nav-group-toggle" title="HAMA NA KILASI" aria-expanded="{% if request.resolver_match.namespace == 'transport' %}true{% else %}false{% endif %}"><span class="ico" data-icon="products"></span><span class="nav-label">HAMA NA KILASI</span><span class="nav-group-chevron"></span></button>
+            <div class="nav-submenu"><div class="nav-submenu-inner">
+              <a class="nav-subitem" href="{% url 'transport:vehicles' %}"><span class="nav-child-dot"></span>Vehicles</a>
+              <a class="nav-subitem" href="{% url 'transport:drivers' %}"><span class="nav-child-dot"></span>Drivers</a>
+              <a class="nav-subitem" href="{% url 'transport:trips' %}"><span class="nav-child-dot"></span>Trips</a>
+              <a class="nav-subitem" href="{% url 'transport:bookings' %}"><span class="nav-child-dot"></span>Bookings</a>
+              {% if transport_is_manager %}
+              <a class="nav-subitem" href="{% url 'transport:expenses' %}"><span class="nav-child-dot"></span>Transport expenses</a>
+              <a class="nav-subitem" href="{% url 'transport:reports' %}"><span class="nav-child-dot"></span>Transport reports</a>
+              {% endif %}
+            </div></div>
+          </div>
+          {% if transport_is_manager %}
+          <div class="nav-group {% if request.resolver_match.namespace == 'transport_sms' %}open active-group{% endif %}" data-nav-group="sms-center">
+            <button class="nav-group-toggle" type="button" aria-expanded="{% if request.resolver_match.namespace == 'transport_sms' %}true{% else %}false{% endif %}"><span class="ico" data-icon="reports"></span><span class="nav-label">SMS Center</span><span class="nav-group-chevron"></span></button>
+            <div class="nav-submenu"><div class="nav-submenu-inner">
+              <a class="nav-subitem" href="{% url 'transport_sms:hub' %}"><span class="nav-child-dot"></span>HAMA NA KILASI customers</a>
+              <a class="nav-subitem" href="{% url 'transport_sms:automations' %}"><span class="nav-child-dot"></span>Automatic SMS</a>
+              <a class="nav-subitem" href="{% url 'transport_sms:history' %}"><span class="nav-child-dot"></span>SMS history</a>
+            </div></div>
+          </div>{% endif %}
+        {% else %}
+          {% if novman_can_switch_branch %}
+            <a href="{% url 'dashboard' %}" class="nav-item nav-direct {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><span class="ico" data-icon="dashboard"></span><span class="nav-label">Main Dashboard</span></a>
+            <a href="{% url 'retail_overview' %}" class="nav-item nav-direct {% if request.resolver_match.url_name == 'retail_overview' %}active{% endif %}"><span class="ico" data-icon="products"></span><span class="nav-label">Retail Dashboard</span></a>
+          {% endif %}
+          <div class="nav-group {% if request.resolver_match.url_name == 'pos' or request.resolver_match.url_name == 'sales' or request.resolver_match.namespace == 'billing' or request.resolver_match.namespace == 'kilasi_orders' %}open active-group{% endif %}" data-nav-group="sales">
+            <button class="nav-group-toggle" type="button" aria-expanded="{% if request.resolver_match.url_name == 'pos' or request.resolver_match.url_name == 'sales' or request.resolver_match.namespace == 'billing' or request.resolver_match.namespace == 'kilasi_orders' %}true{% else %}false{% endif %}"><span class="ico" data-icon="pos"></span><span class="nav-label">Sales &amp; Orders</span><span class="nav-group-chevron"></span></button>
+            <div class="nav-submenu"><div class="nav-submenu-inner">
+              <a href="{% url 'pos' %}" class="nav-subitem"><span class="nav-child-dot"></span>Point of Sale</a>
+              <a href="{% url 'sales' %}" class="nav-subitem"><span class="nav-child-dot"></span>Sales History</a>
+              <a href="{% url 'kilasi_orders:orders' %}" class="nav-subitem"><span class="nav-child-dot"></span>Customer Orders</a>
+              {% if request.user.is_superuser or request.user.profile.role == 'admin' %}
+                <a href="{% url 'billing:home' %}" class="nav-subitem"><span class="nav-child-dot"></span>Invoices &amp; Proformas</a>
+                <a href="{% url 'kilasi_orders:returns' %}" class="nav-subitem"><span class="nav-child-dot"></span>Sales Returns</a>
+                <a href="{% url 'debts' %}" class="nav-subitem"><span class="nav-child-dot"></span>Debts &amp; Customers</a>
+                <a href="{% url 'end_day' %}" class="nav-subitem"><span class="nav-child-dot"></span>End Day</a>
+              {% endif %}
+            </div></div>
+          </div>
+          <div class="nav-group {% if request.resolver_match.url_name == 'products' or request.resolver_match.url_name == 'stock' or request.resolver_match.url_name == 'purchases' or request.resolver_match.url_name == 'stock_transfers' or request.resolver_match.url_name == 'stocktakes' %}open active-group{% endif %}" data-nav-group="inventory">
+            <button class="nav-group-toggle" type="button" title="Inventory" aria-expanded="{% if request.resolver_match.url_name == 'products' or request.resolver_match.url_name == 'stock' or request.resolver_match.url_name == 'purchases' or request.resolver_match.url_name == 'stock_transfers' or request.resolver_match.url_name == 'stocktakes' %}true{% else %}false{% endif %}"><span class="ico" data-icon="products"></span><span class="nav-label">Inventory</span><span class="nav-group-chevron"></span></button>
+            <div class="nav-submenu"><div class="nav-submenu-inner">
+              {% if request.user.is_superuser or request.user.profile.role == 'admin' %}
+                <a class="nav-subitem" href="{% url 'products' %}"><span class="nav-child-dot"></span>Products</a>
+                <a class="nav-subitem" href="{% url 'stock' %}"><span class="nav-child-dot"></span>Stock Control</a>
+                <a class="nav-subitem" href="{% url 'purchases' %}"><span class="nav-child-dot"></span>Purchases</a>
+                <a class="nav-subitem" href="{% url 'stock_transfers' %}"><span class="nav-child-dot"></span>Stock Transfers</a>
+              {% endif %}
+              <a class="nav-subitem" href="{% url 'stocktakes' %}"><span class="nav-child-dot"></span>Stocktake</a>
+            </div></div>
+          </div>
+          <div class="nav-group {% if request.resolver_match.namespace == 'kilasi_trade' %}open active-group{% endif %}" data-nav-group="trade">
+            <button class="nav-group-toggle" type="button" title="Genji &amp; Top-Up" aria-expanded="{% if request.resolver_match.namespace == 'kilasi_trade' %}true{% else %}false{% endif %}"><span class="ico" data-icon="products"></span><span class="nav-label">Genji &amp; Top-Up</span><span class="nav-group-chevron"></span></button>
+            <div class="nav-submenu"><div class="nav-submenu-inner">
+              <a class="nav-subitem" href="{% url 'kilasi_trade:overview' %}"><span class="nav-child-dot"></span>Trade Dashboard</a>
+              <a class="nav-subitem" href="{% url 'kilasi_trade:genji_list' %}"><span class="nav-child-dot"></span>Genji Sales</a>
+              <a class="nav-subitem" href="{% url 'kilasi_trade:topup_list' %}"><span class="nav-child-dot"></span>Top-Up / Exchange</a>
+              <a class="nav-subitem" href="{% url 'kilasi_trade:used_stock' %}"><span class="nav-child-dot"></span>Used Items</a>
+            </div></div>
+          </div>
+          <div class="nav-group {% if request.resolver_match.url_name == 'expenses' or request.resolver_match.url_name == 'reports' or request.resolver_match.url_name == 'kilasi_finance_overview' %}open active-group{% endif %}" data-nav-group="finance">
+            <button class="nav-group-toggle" type="button" title="Finance" aria-expanded="{% if request.resolver_match.url_name == 'expenses' or request.resolver_match.url_name == 'reports' or request.resolver_match.url_name == 'kilasi_finance_overview' %}true{% else %}false{% endif %}"><span class="ico" data-icon="reports"></span><span class="nav-label">Finance</span><span class="nav-group-chevron"></span></button>
+            <div class="nav-submenu"><div class="nav-submenu-inner">
+              <a class="nav-subitem" href="{% url 'expenses' %}"><span class="nav-child-dot"></span>Expenses</a>
+              {% if request.user.is_superuser or request.user.profile.role == 'admin' %}
+                <a class="nav-subitem" href="{% url 'kilasi_finance_overview' %}"><span class="nav-child-dot"></span>Retail Finance</a>
+                <a class="nav-subitem" href="{% url 'reports' %}"><span class="nav-child-dot"></span>Reports</a>
+                <a class="nav-subitem" href="{% url 'ninaowadai' %}"><span class="nav-child-dot"></span>Ninaowadai</a>
+              {% endif %}
+            </div></div>
+          </div>
+          {% if request.user.is_superuser or request.user.profile.role == 'admin' %}
+          <div class="nav-group {% if request.resolver_match.namespace == 'transport' %}open active-group{% endif %}" data-nav-group="hama-na-kilasi">
+            <button class="nav-group-toggle" type="button" title="HAMA NA KILASI" aria-expanded="{% if request.resolver_match.namespace == 'transport' %}true{% else %}false{% endif %}"><span class="ico" data-icon="reports"></span><span class="nav-label">HAMA NA KILASI</span><span class="nav-group-chevron"></span></button>
+            <div class="nav-submenu"><div class="nav-submenu-inner">
+              <a class="nav-subitem" href="{% url 'transport:home' %}"><span class="nav-child-dot"></span>Transport Dashboard</a>
+              <a class="nav-subitem" href="{% url 'transport:vehicles' %}"><span class="nav-child-dot"></span>Vehicles</a>
+              <a class="nav-subitem" href="{% url 'transport:drivers' %}"><span class="nav-child-dot"></span>Drivers</a>
+              <a class="nav-subitem" href="{% url 'transport:trips' %}"><span class="nav-child-dot"></span>Trips</a>
+              <a class="nav-subitem" href="{% url 'transport:bookings' %}"><span class="nav-child-dot"></span>Bookings</a>
+              <a class="nav-subitem" href="{% url 'transport:expenses' %}"><span class="nav-child-dot"></span>Transport Expenses</a>
+              <a class="nav-subitem" href="{% url 'transport:reports' %}"><span class="nav-child-dot"></span>Transport Reports</a>
+              <a class="nav-subitem" href="{% url 'transport:users' %}"><span class="nav-child-dot"></span>Transport Users</a>
+            </div></div>
+          </div>
+          <div class="nav-group {% if request.resolver_match.namespace == 'sms_center' or request.resolver_match.namespace == 'retail_sms' or request.resolver_match.namespace == 'transport_sms' %}open active-group{% endif %}" data-nav-group="sms-center">
+            <button class="nav-group-toggle" type="button" title="SMS Center" aria-expanded="{% if request.resolver_match.namespace == 'sms_center' or request.resolver_match.namespace == 'retail_sms' or request.resolver_match.namespace == 'transport_sms' %}true{% else %}false{% endif %}"><span class="ico" data-icon="reports"></span><span class="nav-label">SMS Center</span><span class="nav-group-chevron"></span></button>
+            <div class="nav-submenu"><div class="nav-submenu-inner">
+              <a class="nav-subitem" href="{% url 'sms_center:dashboard' %}"><span class="nav-child-dot"></span>SMS Overview</a>
+              <a class="nav-subitem" href="{% url 'retail_sms:hub' %}"><span class="nav-child-dot"></span>Retail SMS Customers</a>
+              <a class="nav-subitem" href="{% url 'transport_sms:hub' %}"><span class="nav-child-dot"></span>HAMA NA KILASI SMS</a>
+              <a class="nav-subitem" href="{% url 'sms_center:send' %}"><span class="nav-child-dot"></span>Send SMS</a>
+              <a class="nav-subitem" href="{% url 'sms_center:contacts' %}"><span class="nav-child-dot"></span>Contacts</a>
+              <a class="nav-subitem" href="{% url 'sms_center:templates' %}"><span class="nav-child-dot"></span>Templates</a>
+              <a class="nav-subitem" href="{% url 'retail_sms:automations' %}"><span class="nav-child-dot"></span>Retail Automations</a>
+              <a class="nav-subitem" href="{% url 'transport_sms:automations' %}"><span class="nav-child-dot"></span>Transport Automations</a>
+              <a class="nav-subitem" href="{% url 'sms_center:history' %}"><span class="nav-child-dot"></span>SMS History</a>
+              <a class="nav-subitem" href="{% url 'sms_center:senders' %}"><span class="nav-child-dot"></span>Sender IDs</a>
+            </div></div>
+          </div>
+          <div class="nav-group {% if request.resolver_match.url_name == 'users' or request.resolver_match.url_name == 'settings' or request.resolver_match.url_name == 'data_tools' %}open active-group{% endif %}" data-nav-group="administration">
+            <button class="nav-group-toggle" type="button" title="Administration" aria-expanded="{% if request.resolver_match.url_name == 'users' or request.resolver_match.url_name == 'settings' or request.resolver_match.url_name == 'data_tools' %}true{% else %}false{% endif %}"><span class="ico" data-icon="users"></span><span class="nav-label">Administration</span><span class="nav-group-chevron"></span></button>
+            <div class="nav-submenu"><div class="nav-submenu-inner">
+              <a class="nav-subitem" href="{% url 'users' %}"><span class="nav-child-dot"></span>Users</a>
+              <a class="nav-subitem" href="{% url 'branch_manage' %}"><span class="nav-child-dot"></span>Branches</a>
+              <a class="nav-subitem" href="{% url 'settings' %}"><span class="nav-child-dot"></span>Settings</a>
+              <a class="nav-subitem" href="{% url 'data_tools' %}"><span class="nav-child-dot"></span>Data &amp; Backup</a>
+            </div></div>
+          </div>
+          {% endif %}
+        {% endif %}
+
+        {% if kilasi_stage_native_ui %}
+        <!-- KILASI_STAGE7F_SIDEBAR: appears ONLY when staging context processor is installed -->
+        <div class="nav-group {% if kilasi_stage_nav_open %}open active-group{% endif %}" data-nav-group="stage-history">
+          <button type="button" class="nav-group-toggle" aria-expanded="{% if kilasi_stage_nav_open %}true{% else %}false{% endif %}" title="Staged historical data">
+            <span class="ico" data-icon="reports"></span><span class="nav-label">Migrated History</span><span class="nav-group-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="nav-submenu"><div class="nav-submenu-inner">
+            <a class="nav-subitem {% if request.path == '/legacy/' %}active{% endif %}" href="/legacy/"><span class="nav-child-dot"></span>History overview</a>
+            <a class="nav-subitem {% if request.path == '/sales/' %}active{% endif %}" href="/sales/"><span class="nav-child-dot"></span>Retail receipts</a>
+            <a class="nav-subitem {% if request.path == '/transport/' %}active{% endif %}" href="/transport/"><span class="nav-child-dot"></span>HAMA NA KILASI</a>
+            <a class="nav-subitem {% if request.path == '/transport/trips/' %}active{% endif %}" href="/transport/trips/"><span class="nav-child-dot"></span>Historical trips</a>
+            <!-- KILASI_STAGE7H_CLOSED_HAMA -->
+            <a class="nav-subitem {% if request.path == '/transport/closed-history/' %}active{% endif %}" href="/transport/closed-history/"><span class="nav-child-dot"></span>Closed HAMA history</a>
+            <a class="nav-subitem {% if request.path == '/transport/bookings/' %}active{% endif %}" href="/transport/bookings/"><span class="nav-child-dot"></span>Historical bookings</a>
+            <a class="nav-subitem {% if request.path == '/trade/' %}active{% endif %}" href="/trade/"><span class="nav-child-dot"></span>Genji &amp; Top-Up</a>
+            <a class="nav-subitem {% if request.path == '/sms/history/' %}active{% endif %}" href="/sms/history/"><span class="nav-child-dot"></span>SMS delivery archive</a>
+
+            <!-- KILASI_PHASE7G_REVIEW -->
+            <a class="nav-subitem {% if request.path == '/migration/reconcile/' %}active{% endif %}" href="/migration/reconcile/"><span class="nav-child-dot"></span>Migration reconciliation</a>
+          </div></div>
+        </div>
+        {% endif %}
+</nav>
+
+      <div class="sidebar-user" title="{{ request.user.get_full_name|default:request.user.username }}">
+        <div class="avatar">{{ request.user.username|first|upper }}</div>
+        <div class="sidebar-user-copy">
+          <span class="user-name">{{ request.user.get_full_name|default:request.user.username }}</span>
+          <span class="user-role">{% if transport_membership %}{{ transport_membership.get_role_display }}{% else %}{{ request.user.profile.get_role_display }}{% endif %}</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="main-area">
+    <header class="topbar">
+      <button class="icon-btn shell-menu-btn" id="menuBtn" type="button" aria-label="Toggle sidebar" aria-controls="sidebar" aria-expanded="true">
+        <span data-icon="menu"></span>
+      </button>
+
+      <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
+
+      <div class="topbar-right">
+        {% if novman_branch and request.resolver_match.namespace != 'transport' %}
+        {% if novman_can_switch_branch %}
+          <form method="post" action="{% url 'branch_switch' %}" class="novman-can-switch novman-branch-select">
+            {% csrf_token %}
+            <label for="novmanBranchSelect">Branch</label>
+            <select id="novmanBranchSelect" name="branch_id" class="form-control" onchange="this.form.submit()">
+              {% for b in novman_branches %}
+                <option value="{{ b.id }}" {% if b.id == novman_branch.id %}selected{% endif %}>{{ b.name }}</option>
+              {% endfor %}
+            </select>
+            <noscript><button class="btn btn-primary btn-sm">Change</button></noscript>
+          </form>
+        {% else %}
+          <div class="novman-branch-current">{{ novman_branch.name }}</div>
+        {% endif %}
+        {% endif %}
+        <span class="online-state"><i></i>Online</span>
+        <span class="date-chip" id="liveDate"></span>
+
+        <div class="user-menu-wrap" id="userMenuWrap">
+          <button class="user-menu-btn" id="userMenuBtn" type="button" aria-haspopup="menu" aria-expanded="false">
+            <span class="topbar-avatar">{{ request.user.username|first|upper }}</span>
+            <span class="topbar-user-copy">
+              <span class="topbar-user-name">{{ request.user.get_full_name|default:request.user.username }}</span>
+              <span class="topbar-user-role">{% if transport_membership %}{{ transport_membership.get_role_display }}{% else %}{{ request.user.profile.get_role_display }}{% endif %}</span>
+            </span>
+            <span class="user-chevron" aria-hidden="true"></span>
+          </button>
+
+          <div class="user-menu" id="userMenu" role="menu" aria-hidden="true">
+            <div class="user-menu-head">
+              <span class="user-menu-title">{{ request.user.get_full_name|default:request.user.username }}</span>
+              <span class="user-menu-sub">@{{ request.user.username }}</span>
+            </div>
+            <div class="user-menu-links">
+              {% if transport_membership %}
+              <a href="{% url 'transport:home' %}" role="menuitem"><span data-icon="dashboard"></span><span>HAMA NA KILASI</span></a>
+              {% else %}
+              {% if novman_can_switch_branch %}<a href="{% url 'dashboard' %}" role="menuitem"><span data-icon="dashboard"></span><span>Dashboard</span></a>{% endif %}
+              <a href="{% url 'end_day' %}" role="menuitem"><span data-icon="reports"></span><span>End Day</span></a>
+              {% if request.user.profile.role == 'admin' or request.user.is_superuser %}
+              <a href="{% url 'debts' %}" role="menuitem"><span data-icon="debts"></span><span>Debts</span></a>
+              <a href="{% url 'ninaowadai' %}" role="menuitem"><span data-icon="debts"></span><span>Ninaowadai</span></a>
+              <a href="{% url 'sms_center:dashboard' %}" role="menuitem"><span data-icon="reports"></span><span>SMS Center</span></a>
+              <a href="{% url 'settings' %}" role="menuitem"><span data-icon="settings"></span><span>Settings</span></a>
+              {% endif %}
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <a href="{% url 'logout' %}" class="icon-btn topbar-logout" title="Logout" aria-label="Logout">
+          <span data-icon="logout"></span>
+        </a>
+      </div>
+    </header>
+
+    <section class="page-content">
+      {% if messages %}
+      <div class="messages">
+        {% for message in messages %}<div class="alert {{ message.tags }}">{{ message }}</div>{% endfor %}
+      </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </section>
+  </main>
+</div>
+
+<div class="modal" id="confirmActionModal" role="dialog" aria-modal="true" aria-labelledby="confirmActionTitle">
+  <div class="modal-card modal-small">
+    <div class="modal-head">
+      <div><h2 id="confirmActionTitle">Confirm action</h2><p id="confirmActionText">Please confirm this action.</p></div>
+      <button class="modal-close" type="button" data-close-modal="confirmActionModal" aria-label="Close">×</button>
+    </div>
+    <form method="post" id="confirmActionForm" class="form-body modal-form">
+      {% csrf_token %}
+      <div class="confirm-note">This action is checked by the system before any historical records are removed.</div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" type="button" data-close-modal="confirmActionModal">Cancel</button>
+        <button class="btn btn-danger" type="submit" id="confirmActionSubmit">Confirm</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% block scripts %}{% endblock %}
+<script src="{% static 'core/app.js' %}?v=24"></script>
+  <!-- KILASI_V2_SIDEBAR_STATE_1: active submenu and saved sidebar position -->
+  <script src="{% static 'core/kilasi_sidebar_state.js' %}?v=1" data-user-id="{{ request.user.pk }}"></script>
+</body>
+</html>

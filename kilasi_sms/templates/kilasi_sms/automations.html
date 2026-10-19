@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block page_title %}{{ department_name }} · Automatic SMS{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Automatic SMS · {{ department_name }}</h1><p>{{ branch.name }} · Service updates and reminders with individual controls. A saved rule does not send a message immediately.</p></div>
+  <div class="head-actions"><a href="{{ sms_url }}" class="btn btn-secondary">Customer messages</a></div>
+</div>
+<section class="card compact">
+  <div class="dashboard-strip nv-dashboard-strip">
+    <div><span>Department</span><strong>{{ department_name }}</strong></div>
+    <div><span>Branch</span><strong>{{ branch.name }}</strong></div>
+    <div><span>Automation engine</span><strong>{% if automations_on %}Enabled{% else %}OFF — safe{% endif %}</strong></div>
+    <div><span>Schedule</span><strong>Scheduled command</strong></div>
+  </div>
+  <p class="field-note">Automations are OFF globally by default. Only enable the automation engine and Beem live sending after testing on approved phone numbers. A provider-accepted SMS is not necessarily delivered.</p>
+</section>
+<div class="content-grid two section-gap ki-automation-grid">
+{% for item in rules %}
+<section class="card ki-automation-card">
+  <div class="card-head"><div><h2>{{ item.name }}</h2><p>{{ item.key }} · {{ branch.name }}</p></div>
+    {% if item.rule.enabled %}<span class="badge completed">Enabled</span>{% else %}<span class="badge">Off</span>{% endif %}</div>
+  <form method="post" action="{{ save_url }}" class="form-body">
+    {% csrf_token %}<input type="hidden" name="event_key" value="{{ item.key }}">
+    <label>Message template
+      <select class="form-control" name="template_id" required><option value="">Select template</option>
+      {% for tmpl in templates %}<option value="{{ tmpl.id }}" {% if item.template_id == tmpl.id %}selected{% endif %}>{{ tmpl.name }}</option>{% endfor %}
+      </select></label>
+    <label>Beem-approved Sender ID
+      <select class="form-control" name="sender_id"><option value="">Choose sender</option>
+        {% for sender in senders %}<option value="{{ sender.sender_id }}" {% if item.rule.sender_id == sender.sender_id %}selected{% endif %}>{{ sender.sender_id }}</option>{% endfor %}
+      </select></label>
+    <label class="toggle-row"><span><span class="toggle-title">Enable this workflow</span><small>Turn off to prevent pending jobs being submitted</small></span>
+      <input type="checkbox" class="toggle-input" name="enabled" {% if item.rule.enabled %}checked{% endif %}></label>
+    <label class="toggle-row"><span><span class="toggle-title">Confirm consent and review</span><small>I have verified these are authorized service notifications for this branch</small></span>
+      <input type="checkbox" class="toggle-input" name="acknowledge"></label>
+    <div class="form-actions"><button type="submit" class="btn btn-primary">Save workflow</button></div>
+  </form>
+</section>
+{% endfor %}
+</div>
+<section class="card section-gap"><div class="card-head"><div><h2>Automation queue</h2><p>Last 35 scheduled attempts. Unknown status is NOT automatically retried.</p></div></div>
+  <div class="table-wrap"><table><thead><tr><th>Event</th><th>Customer</th><th>Due</th><th>Status</th><th>Provider</th></tr></thead><tbody>
+  {% for job in jobs %}<tr><td>{{ job.event_key }}</td><td>{{ job.name }}</td><td>{{ job.due_at|date:'d M Y H:i' }}</td><td><span class="badge">{{ job.get_status_display }}</span></td><td>{% if job.campaign %}<span>Campaign #{{ job.campaign.pk }}</span>{% else %}—{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="5" class="empty">No automatic notifications have been queued for this branch yet.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+{% endblock %}

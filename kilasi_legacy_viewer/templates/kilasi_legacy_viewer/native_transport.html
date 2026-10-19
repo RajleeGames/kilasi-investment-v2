@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% load mfp %}
+{% block title %}HAMA NA KILASI · Historical Transport{% endblock %}
+{% block page_title %}HAMA NA KILASI{% endblock %}
+{% block content %}
+<div class="ki-native">
+  <div class="page-head"><div><h1>HAMA NA KILASI</h1><p>One independent Transport department · Historical operations, all Retail branches excluded.</p></div><div class="head-actions"><span class="ki-stage-tag">HISTORICAL · READ ONLY</span><a class="btn btn-secondary" href="/legacy/">Original archive</a></div></div>
+  <div class="novman-stat-grid ki-native-grid"><article class="novman-stat"><label>Historical trips</label><strong>{{ trips }}</strong></article><article class="novman-stat"><label>Bookings</label><strong>{{ bookings }}</strong></article><article class="novman-stat"><label>Vehicles</label><strong>{{ vehicles }}</strong></article><article class="novman-stat"><label>Drivers</label><strong>{{ drivers }}</strong></article><article class="novman-stat"><label>Transport expenses</label><strong>{{ expenses }}</strong></article><article class="novman-stat"><label>Recorded charges · TZS</label><strong>{{ charged|money }}</strong><small>Excludes cancelled trips · not cash collected</small></article><article class="novman-stat"><label>Recorded expense value · TZS</label><strong>{{ expense_total|money }}</strong></article></div>
+  <div class="alert ki-note"><strong>Do not interpret historical charges as unpaid debt.</strong> The old Kilasi trip data has no equivalent settlement ledger. These trips have not been posted as live V2 invoices or balances.</div>
+  <div class="ki-actions ki-action-gap"><a class="btn btn-primary" href="/transport/trips/">Trips</a><a class="btn btn-secondary" href="/transport/bookings/">Bookings</a><a class="btn btn-secondary" href="/transport/expenses/">Transport expenses</a><a class="btn btn-secondary" href="/transport/vehicles/">V2 vehicles</a><a class="btn btn-secondary" href="/transport/drivers/">V2 drivers</a></div>
+  <section class="card ki-section"><div class="ki-section-head"><h2>Latest historical trips</h2><p>Amounts are recorded trip charges, not confirmed collections.</p></div><div class="table-wrap ki-table-wrap"><table><thead><tr><th>Old trip</th><th>Date</th><th>Origin</th><th>Destination</th><th>Vehicle</th><th>Status</th><th>Charged · TZS</th></tr></thead><tbody>{% for t in latest %}<tr><td>{{ t.id }}</td><td>{{ t.trip_date }}</td><td>{{ t.origin }}</td><td>{{ t.destination }}</td><td>{{ t.vehicle }}</td><td>{{ t.status }}</td><td>{{ t.amount_charged|money }}</td></tr>{% empty %}<tr><td colspan="7" class="empty">No historical trips.</td></tr>{% endfor %}</tbody></table></div></section>
+</div>
+{% endblock %}

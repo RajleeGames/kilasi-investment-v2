@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}{{ name }} · KILASI V2{% endblock %}
+{% block page_title %}{{ name }}{% endblock %}
+{% block content %}
+<div class="ki-native">
+  <div class="page-head"><div><h1>{{ name }}</h1><p>{{ count }} source records. These original rows have not been replayed as new transactions.</p></div><div class="head-actions"><span class="ki-stage-tag">HISTORICAL · READ ONLY</span><a href="{% url 'kilasi_legacy_viewer:overview' %}" class="btn btn-secondary">All history</a></div></div>
+  <form method="get" class="novman-filters ki-filter"><label>Original record number<input class="form-control" name="q" type="text" inputmode="numeric" maxlength="24" value="{{ q }}" placeholder="e.g. 102"></label><button class="btn btn-primary" type="submit">Search</button><a href="?" class="btn btn-secondary">Clear</a></form>
+  <section class="card ki-section"><div class="table-wrap ki-table-wrap"><table><thead><tr>{% for h in headers %}<th>{{ h }}</th>{% endfor %}{% if kind == 'invoice' %}<th>Invoice</th>{% endif %}</tr></thead><tbody>{% for record_id, values in rows %}<tr>{% for value in values %}<td>{{ value }}</td>{% endfor %}{% if kind == 'invoice' %}<td><a class="table-link" href="{% url 'kilasi_legacy_viewer:invoice_lines' record_id %}">View lines</a></td>{% endif %}</tr>{% empty %}<tr><td colspan="12" class="empty">No historical records found for this number.</td></tr>{% endfor %}</tbody></table></div></section>
+  <div class="ki-pager"><span>Page {{ page }} of {{ pages }}</span><div>{% if prev %}<a class="btn btn-secondary btn-sm" href="?q={{ q|urlencode }}&amp;page={{ prev }}">Previous</a>{% endif %}{% if next %}<a class="btn btn-secondary btn-sm" href="?q={{ q|urlencode }}&amp;page={{ next }}">Next</a>{% endif %}</div></div>
+  <p class="ki-muted">Source ledger records remain immutable; importing them as live sales, unpaid trip balances or SMS recipients requires additional approval.</p>
+</div>
+{% endblock %}

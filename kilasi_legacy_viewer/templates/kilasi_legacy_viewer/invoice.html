@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% load mfp %}
+{% block title %}Original invoice {{ header.id }} · KILASI V2{% endblock %}
+{% block page_title %}Historical Invoice{% endblock %}
+{% block content %}
+<div class="ki-native">
+  <div class="page-head"><div><h1>Original invoice #{{ header.id }}</h1><p>{{ header.created_at }} · {{ header.customer }} · {{ header.invoice_state }}</p></div><div class="head-actions"><span class="ki-stage-tag">SOURCE SNAPSHOT</span><a href="{% url 'kilasi_legacy_viewer:records' 'sales' %}" class="btn btn-secondary">Back to invoices</a></div></div>
+  <div class="novman-stat-grid"><article class="novman-stat"><label>Original total · TZS</label><strong>{{ header.total_amount|money }}</strong></article><article class="novman-stat"><label>Payment method</label><strong>{{ header.status }}</strong></article><article class="novman-stat"><label>State</label><strong>{{ header.invoice_state }}</strong></article></div>
+  <section class="card ki-section"><div class="ki-section-head"><h2>Original invoice items</h2></div><div class="table-wrap ki-table-wrap"><table><thead><tr><th>Item #</th><th>Product</th><th>Qty</th><th>Sell/unit</th><th>Buy/unit</th><th>Discount/unit</th></tr></thead><tbody>{% for line in lines %}<tr><td>{{ line.id }}</td><td>{{ line.product }}</td><td>{{ line.quantity }}</td><td>{{ line.selling_price|money }}</td><td>{{ line.buying_cost|money }}</td><td>{{ line.discount|money }}</td></tr>{% empty %}<tr><td colspan="6" class="empty">No invoice items recorded in old Kilasi. Requires review.</td></tr>{% endfor %}</tbody></table></div></section>
+  <section class="card ki-section"><div class="ki-section-head"><h2>Original payment history</h2><p>Original database does not record the payment channel for each payment.</p></div><div class="table-wrap ki-table-wrap"><table><thead><tr><th>Payment #</th><th>Amount · TZS</th><th>Recorded date</th></tr></thead><tbody>{% for p in payments %}<tr><td>{{ p.id }}</td><td>{{ p.amount|money }}</td><td>{{ p.timestamp }}</td></tr>{% empty %}<tr><td colspan="3" class="empty">No separate payment rows for this invoice.</td></tr>{% endfor %}</tbody></table></div></section>
+</div>
+{% endblock %}
