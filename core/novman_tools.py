@@ -178,6 +178,9 @@ def _report(kind, branch, start, end):
 @require_http_methods(['GET', 'POST'])
 def branch_manage(request):
     if request.method == 'POST':
+        messages.error(request, 'The business currently has three fixed Retail branches. Contact the administrator before restructuring branches.')
+        return redirect('branch_manage')
+    if request.method == 'POST':
         action = (request.POST.get('action') or '').strip()
         if action == 'create':
             name = ' '.join((request.POST.get('name') or '').split())
@@ -221,7 +224,7 @@ def branch_manage(request):
             messages.error(request, 'Invalid branch operation.')
         return redirect('branch_manage')
     branch_info = []
-    for branch in Branch.objects.all().order_by('-is_active', 'name'):
+    for branch in Branch.objects.filter(name__in=('KILASI JUU', 'KILASI CHINI', 'KILASI ARUSHA')).order_by('-is_active', 'name'):
         quantities = StockBatch.objects.filter(branch=branch, quantity_remaining_base__gt=0).aggregate(q=Sum('quantity_remaining_base'))['q'] or Decimal('0')
         branch_info.append({'branch': branch, 'stock': quantities,
                             'users': UserProfile.objects.filter(branch=branch, user__is_active=True).count()})

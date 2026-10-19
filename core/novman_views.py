@@ -41,7 +41,7 @@ def _money(qs, field):
 @admin_required
 @require_POST
 def branch_switch(request):
-    branch = get_object_or_404(Branch, pk=request.POST.get('branch_id'), is_active=True)
+    branch = get_object_or_404(Branch, pk=request.POST.get('branch_id'), is_active=True, name__in=('KILASI JUU', 'KILASI CHINI', 'KILASI ARUSHA'))
     request.session['novman_branch_id'] = branch.pk
     # Redirect to a known safe location, not an untrusted URL.
     return redirect('dashboard')

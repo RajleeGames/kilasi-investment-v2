@@ -237,7 +237,7 @@ from .models import Branch
 class UserCreateForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}))
     role = forms.ChoiceField(choices=ROLE_CHOICES, widget=forms.Select(attrs={'class': 'form-control'}))
-    branch = forms.ModelChoiceField(queryset=Branch.objects.filter(is_active=True), required=False, empty_label='Choose branch', widget=forms.Select(attrs={'class':'form-control'}))
+    branch = forms.ModelChoiceField(queryset=Branch.objects.filter(is_active=True, name__in=('KILASI JUU', 'KILASI CHINI', 'KILASI ARUSHA')), required=False, empty_label='Choose branch', widget=forms.Select(attrs={'class':'form-control'}))
 
     class Meta:
         model = User
@@ -275,7 +275,7 @@ class UserEditForm(forms.ModelForm):
         help_text='Leave blank if you do not want to change the password.'
     )
     role = forms.ChoiceField(choices=ROLE_CHOICES, widget=forms.Select(attrs={'class': 'form-control'}))
-    branch = forms.ModelChoiceField(queryset=Branch.objects.filter(is_active=True), required=False, empty_label='Choose branch', widget=forms.Select(attrs={'class':'form-control'}))
+    branch = forms.ModelChoiceField(queryset=Branch.objects.filter(is_active=True, name__in=('KILASI JUU', 'KILASI CHINI', 'KILASI ARUSHA')), required=False, empty_label='Choose branch', widget=forms.Select(attrs={'class':'form-control'}))
 
     class Meta:
         model = User

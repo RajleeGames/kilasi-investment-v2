@@ -1,0 +1,16 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block title %}{{ heading }} · Kilasi Investment{% endblock %}
+{% block page_title %}{{ heading }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ heading }}</h1><p>Supplier information for purchases and product records.</p></div>
+<a href="{% url 'kilasi_suppliers' %}" class="btn btn-secondary">Back to suppliers</a></div>
+<section class="card novman-panel">
+  <form method="post" class="form-body">{% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert error">{{ form.non_field_errors }}</div>{% endif %}
+    {% for field in form %}
+    <label>{{ field.label }}{{ field }}{% if field.errors %}<small class="cell-sub">{{ field.errors }}</small>{% endif %}</label>
+    {% endfor %}
+    <div class="head-actions"><button class="btn btn-primary" type="submit">{{ submit_label }}</button><a href="{% url 'kilasi_suppliers' %}" class="btn btn-secondary">Cancel</a></div>
+  </form>
+</section>
+{% endblock %}

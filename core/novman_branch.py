@@ -9,7 +9,7 @@ def is_admin(user):
 def current_branch(request):
     if not request.user.is_authenticated:
         raise PermissionDenied('Sign in to use Kilasi Investment.')
-    active = Branch.objects.filter(is_active=True)
+    active = Branch.objects.filter(is_active=True, name__in=('KILASI JUU', 'KILASI CHINI', 'KILASI ARUSHA'))
     if is_admin(request.user):
         requested = request.session.get('novman_branch_id')
         branch = active.filter(pk=requested).first() if requested else None
@@ -39,6 +39,6 @@ def branch_context(request):
     admin = is_admin(request.user)
     return {
         'novman_branch': branch,
-        'novman_branches': Branch.objects.filter(is_active=True).order_by('legacy_novman_id', 'name') if admin else [],
+        'novman_branches': Branch.objects.filter(is_active=True, name__in=('KILASI JUU', 'KILASI CHINI', 'KILASI ARUSHA')).order_by('legacy_novman_id', 'name') if admin else [],
         'novman_can_switch_branch': admin,
     }

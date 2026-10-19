@@ -1,58 +1,14 @@
-{% extends 'base.html' %}
-{% load mfp %}
-{% block page_title %}Branches{% endblock %}
+{% extends 'base.html' %}{% load mfp %}
+{% block title %}Retail Branches · Kilasi Investment{% endblock %}
+{% block page_title %}Retail branches{% endblock %}
 {% block content %}
-<div class="page-head">
-  <div>
-    <h1>Manage branches</h1>
-    <p>Create a new Novman Auto Spares location. Each branch has its own stock, sales and reports.</p>
-  </div>
-  <div class="head-actions">
-    <a href="{% url 'users' %}" class="btn btn-secondary">Assign staff</a>
-    <a href="{% url 'settings' %}" class="btn btn-secondary">Business settings</a>
-  </div>
-</div>
-<div class="novman-manage-grid">
-  <section class="card form-section-card">
-    <div class="card-head"><div><h2>Add new branch</h2><p>A new branch starts with zero stock. Transfer or receive stock after creating it.</p></div></div>
-    <form method="post" action="{% url 'branch_manage' %}" class="form-body" autocomplete="off">
-      {% csrf_token %}
-      <input type="hidden" name="action" value="create">
-      <label>Branch name
-        <input name="name" class="form-control" maxlength="120" placeholder="e.g. MOSHI TOWN AUTO SPARES" required>
-      </label>
-      <button type="submit" class="btn btn-primary">Create branch</button>
-    </form>
-  </section>
-  <section class="card">
-    <div class="card-head"><div><h2>All branches</h2><p>Branches with business history cannot be deactivated, to preserve report access.</p></div></div>
-    <div class="table-wrap">
-      <table class="novman-branches-table">
-        <thead><tr><th>Branch</th><th>Available stock</th><th>Active staff</th><th>Status</th><th>Action</th></tr></thead>
-        <tbody>
-          {% for row in branch_info %}
-          <tr>
-            <td><strong>{{ row.branch.name }}</strong>{% if row.branch.legacy_novman_id %}<small class="cell-sub">Original Novman branch</small>{% endif %}</td>
-            <td>{{ row.stock|qty }} units</td>
-            <td>{{ row.users }}</td>
-            <td><span class="badge {% if row.branch.is_active %}completed{% else %}voided{% endif %}">{% if row.branch.is_active %}Active{% else %}Inactive{% endif %}</span></td>
-            <td>
-              <form action="{% url 'branch_manage' %}" method="post">
-                {% csrf_token %}
-                <input name="branch_id" type="hidden" value="{{ row.branch.id }}">
-                {% if row.branch.is_active %}
-                  <button type="submit" class="btn btn-secondary btn-sm" name="action" value="deactivate" onclick="return confirm('Deactivate this unused branch?')">Deactivate</button>
-                {% else %}
-                  <button type="submit" class="btn btn-secondary btn-sm" name="action" value="activate">Activate</button>
-                {% endif %}
-              </form>
-            </td>
-          </tr>
-          {% empty %}<tr><td colspan="5" class="empty">No branches found. Create your first branch above.</td></tr>{% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </section>
-</div>
-<div class="novman-info-note"><strong>Important:</strong> Creating a branch does not duplicate products or move inventory. Assign a cashier in <a href="{% url 'users' %}">Users</a>, then receive stock or use <a href="{% url 'stock_transfers' %}">Stock Transfers</a>.</div>
+<div class="page-head"><div><h1>Retail branches</h1><p>The three Kilasi retail locations. HAMA NA KILASI is an independent Transport department.</p></div>
+  <a class="btn btn-secondary" href="{% url 'users' %}">Assign staff</a></div>
+<section class="card"><div class="table-wrap"><table>
+<thead><tr><th>Branch</th><th>Available stock</th><th>Active staff</th><th>Status</th></tr></thead>
+<tbody>{% for row in branch_info %}
+<tr><td><strong>{{ row.branch.name }}</strong></td><td>{{ row.stock|qty }}</td><td>{{ row.users }}</td>
+<td><span class="badge {% if row.branch.is_active %}completed{% else %}voided{% endif %}">{% if row.branch.is_active %}Active{% else %}Inactive{% endif %}</span></td></tr>
+{% empty %}<tr><td colspan="4" class="empty">No Retail branches configured.</td></tr>{% endfor %}</tbody>
+</table></div></section>
 {% endblock %}

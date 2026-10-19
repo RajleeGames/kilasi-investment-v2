@@ -1,0 +1,32 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block title %}Suppliers · Kilasi Investment{% endblock %}
+{% block page_title %}Suppliers{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Suppliers</h1><p>Manage your Retail suppliers. Existing products and purchase history remain linked.</p></div>
+  <a href="{% url 'kilasi_supplier_add' %}" class="btn btn-primary">Add supplier</a>
+</div>
+<form method="get" class="novman-filters card novman-panel">
+  <label>Search suppliers<input type="search" class="form-control" name="q" value="{{ q }}" placeholder="Name or contact"></label>
+  <button type="submit" class="btn btn-primary">Search</button>
+  {% if q %}<a href="{% url 'kilasi_suppliers' %}" class="btn btn-secondary">Clear</a>{% endif %}
+</form>
+<section class="card">
+  <div class="table-wrap"><table>
+    <thead><tr><th>Supplier</th><th>Contact</th><th>Linked products</th><th></th></tr></thead>
+    <tbody>
+      {% for supplier in page %}
+      <tr><td><strong>{{ supplier.name }}</strong></td><td>{{ supplier.contact|default:'—' }}</td><td>{{ supplier.products_count|qty }}</td>
+        <td><a class="btn btn-secondary btn-sm" href="{% url 'kilasi_supplier_edit' supplier.pk %}">Edit</a></td></tr>
+      {% empty %}<tr><td colspan="4" class="empty">No suppliers found.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</section>
+{% if page.paginator.num_pages > 1 %}
+<nav class="head-actions" aria-label="Supplier pages">
+  {% if page.has_previous %}<a class="btn btn-secondary btn-sm" href="?q={{ q|urlencode }}&amp;page={{ page.previous_page_number }}">Previous</a>{% endif %}
+  <span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+  {% if page.has_next %}<a class="btn btn-secondary btn-sm" href="?q={{ q|urlencode }}&amp;page={{ page.next_page_number }}">Next</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

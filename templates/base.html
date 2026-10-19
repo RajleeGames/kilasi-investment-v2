@@ -91,6 +91,7 @@
                 <a class="nav-subitem" href="{% url 'products' %}"><span class="nav-child-dot"></span>Products</a>
                 <a class="nav-subitem" href="{% url 'stock' %}"><span class="nav-child-dot"></span>Stock Control</a>
                 <a class="nav-subitem" href="{% url 'purchases' %}"><span class="nav-child-dot"></span>Purchases</a>
+                <a class="nav-subitem {% if request.resolver_match.url_name == 'kilasi_suppliers' or request.resolver_match.url_name == 'kilasi_supplier_add' or request.resolver_match.url_name == 'kilasi_supplier_edit' %}active{% endif %}" href="{% url 'kilasi_suppliers' %}"><span class="nav-child-dot"></span>Suppliers</a>
                 <a class="nav-subitem" href="{% url 'stock_transfers' %}"><span class="nav-child-dot"></span>Stock Transfers</a>
               {% endif %}
               <a class="nav-subitem" href="{% url 'stocktakes' %}"><span class="nav-child-dot"></span>Stocktake</a>
@@ -127,6 +128,8 @@
               <a class="nav-subitem" href="{% url 'transport:bookings' %}"><span class="nav-child-dot"></span>Bookings</a>
               <a class="nav-subitem" href="{% url 'transport:expenses' %}"><span class="nav-child-dot"></span>Transport Expenses</a>
               <a class="nav-subitem" href="{% url 'transport:reports' %}"><span class="nav-child-dot"></span>Transport Reports</a>
+              <a class="nav-subitem" href="/transport/closed-history/"><span class="nav-child-dot"></span>Closed Trip History</a>
+              <a class="nav-subitem" href="/transport/history/bookings/"><span class="nav-child-dot"></span>Historical Bookings</a>
               <a class="nav-subitem" href="{% url 'transport:users' %}"><span class="nav-child-dot"></span>Transport Users</a>
             </div></div>
           </div>
@@ -142,6 +145,7 @@
               <a class="nav-subitem" href="{% url 'retail_sms:automations' %}"><span class="nav-child-dot"></span>Retail Automations</a>
               <a class="nav-subitem" href="{% url 'transport_sms:automations' %}"><span class="nav-child-dot"></span>Transport Automations</a>
               <a class="nav-subitem" href="{% url 'sms_center:history' %}"><span class="nav-child-dot"></span>SMS History</a>
+              <a class="nav-subitem" href="/sms/history/"><span class="nav-child-dot"></span>Historical SMS Archive</a>
               <a class="nav-subitem" href="{% url 'sms_center:senders' %}"><span class="nav-child-dot"></span>Sender IDs</a>
             </div></div>
           </div>
@@ -157,28 +161,6 @@
           {% endif %}
         {% endif %}
 
-        {% if kilasi_stage_native_ui %}
-        <!-- KILASI_STAGE7F_SIDEBAR: appears ONLY when staging context processor is installed -->
-        <div class="nav-group {% if kilasi_stage_nav_open %}open active-group{% endif %}" data-nav-group="stage-history">
-          <button type="button" class="nav-group-toggle" aria-expanded="{% if kilasi_stage_nav_open %}true{% else %}false{% endif %}" title="Staged historical data">
-            <span class="ico" data-icon="reports"></span><span class="nav-label">Migrated History</span><span class="nav-group-chevron" aria-hidden="true"></span>
-          </button>
-          <div class="nav-submenu"><div class="nav-submenu-inner">
-            <a class="nav-subitem {% if request.path == '/legacy/' %}active{% endif %}" href="/legacy/"><span class="nav-child-dot"></span>History overview</a>
-            <a class="nav-subitem {% if request.path == '/sales/' %}active{% endif %}" href="/sales/"><span class="nav-child-dot"></span>Retail receipts</a>
-            <a class="nav-subitem {% if request.path == '/transport/' %}active{% endif %}" href="/transport/"><span class="nav-child-dot"></span>HAMA NA KILASI</a>
-            <a class="nav-subitem {% if request.path == '/transport/trips/' %}active{% endif %}" href="/transport/trips/"><span class="nav-child-dot"></span>Historical trips</a>
-            <!-- KILASI_STAGE7H_CLOSED_HAMA -->
-            <a class="nav-subitem {% if request.path == '/transport/closed-history/' %}active{% endif %}" href="/transport/closed-history/"><span class="nav-child-dot"></span>Closed HAMA history</a>
-            <a class="nav-subitem {% if request.path == '/transport/bookings/' %}active{% endif %}" href="/transport/bookings/"><span class="nav-child-dot"></span>Historical bookings</a>
-            <a class="nav-subitem {% if request.path == '/trade/' %}active{% endif %}" href="/trade/"><span class="nav-child-dot"></span>Genji &amp; Top-Up</a>
-            <a class="nav-subitem {% if request.path == '/sms/history/' %}active{% endif %}" href="/sms/history/"><span class="nav-child-dot"></span>SMS delivery archive</a>
-
-            <!-- KILASI_PHASE7G_REVIEW -->
-            <a class="nav-subitem {% if request.path == '/migration/reconcile/' %}active{% endif %}" href="/migration/reconcile/"><span class="nav-child-dot"></span>Migration reconciliation</a>
-          </div></div>
-        </div>
-        {% endif %}
 </nav>
 
       <div class="sidebar-user" title="{{ request.user.get_full_name|default:request.user.username }}">

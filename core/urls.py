@@ -392,3 +392,11 @@ urlpatterns = [
         name='qz_sign',
     ),
 ]
+
+# KILASI_V2_PHASE10_SUPPLIERS — uses existing Supplier model (no migration)
+from . import kilasi_supplier_views
+urlpatterns += [
+    path('suppliers/', kilasi_supplier_views.suppliers, name='kilasi_suppliers'),
+    path('suppliers/add/', kilasi_supplier_views.supplier_create, name='kilasi_supplier_add'),
+    path('suppliers/<int:pk>/edit/', kilasi_supplier_views.supplier_edit, name='kilasi_supplier_edit'),
+]
