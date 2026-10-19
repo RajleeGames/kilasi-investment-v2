@@ -57,15 +57,15 @@ SECRET_KEY = os.getenv(
 DEBUG = env_bool("DJANGO_DEBUG", default=True)
 
 ALLOWED_HOSTS = [
-    "novmanautospares.store",
-    "www.novmanautospares.store",
+    "kilasiinvestment.store",
+    "www.kilasiinvestment.store",
     "127.0.0.1",
     "localhost",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://novmanautospares.store",
-    "https://www.novmanautospares.store",
+    "https://kilasiinvestment.store",
+    "https://www.kilasiinvestment.store",
 ]
 
 
@@ -183,7 +183,7 @@ DATABASES = {
         "ENGINE": "django.db.backends.sqlite3",
 
         "NAME": os.getenv(
-    "NOVMAN_DB_PATH",
+    "KILASI_DB_PATH",
     str(BASE_DIR / "db.sqlite3"),
 ),
     }
@@ -349,7 +349,7 @@ if DEBUG:
 
 BEEM_API_KEY = os.getenv("BEEM_API_KEY", "").strip()
 BEEM_SECRET_KEY = os.getenv("BEEM_SECRET_KEY", "").strip()
-BEEM_SENDER_ID = os.getenv("BEEM_SENDER_ID", "NOVMAN").strip().upper()
+BEEM_SENDER_ID = os.getenv("BEEM_SENDER_ID", "").strip().upper()
 
 BEEM_SEND_URL = os.getenv(
     "BEEM_SEND_URL",
