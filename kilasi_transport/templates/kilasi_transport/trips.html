@@ -1,6 +1,20 @@
 {% extends 'base.html' %}{% load mfp %}
-{% block page_title %}Transport trips{% endblock %}{% block content %}
-<div class="page-head"><div><h1>Trips · {{ branch.name }}</h1><p>Routes, vehicle assignments, transport charges and payment status.</p></div>{% if transport_is_manager %}<a class="btn btn-primary" href="{% url 'transport:trip_new' %}">New trip</a>{% endif %}</div>
-<form method="get" class="novman-filters card novman-panel"><label>Search<input name="q" class="form-control" value="{{ q }}" placeholder="Trip, customer, route or vehicle"></label><label>Status<select name="status" class="form-control"><option value="">All statuses</option><option value="planned" {% if status == 'planned' %}selected{% endif %}>Planned</option><option value="in_progress" {% if status == 'in_progress' %}selected{% endif %}>In progress</option><option value="completed" {% if status == 'completed' %}selected{% endif %}>Completed</option><option value="cancelled" {% if status == 'cancelled' %}selected{% endif %}>Cancelled</option></select></label><button class="btn btn-secondary">Filter</button></form>
-<section class="card"><div class="table-wrap"><table><thead><tr><th>Trip</th><th>Departure</th><th>Customer</th><th>Route</th><th>Vehicle / Driver</th>{% if transport_is_manager %}<th>Charge</th><th>Collected</th>{% endif %}<th>Status</th></tr></thead><tbody>{% for t in rows %}<tr><td><a class="table-link" href="{% url 'transport:trip_detail' t.pk %}">{{ t.reference }}</a></td><td>{{ t.scheduled_start|date:'d M Y H:i' }}</td><td>{{ t.customer_name }}</td><td>{{ t.origin }} → {{ t.destination }}</td><td>{{ t.vehicle.registration }}<small class="cell-sub">{{ t.driver.full_name }}</small></td>{% if transport_is_manager %}<td>{{ t.agreed_fee|money }}</td><td>{{ t.collected|money }}</td>{% endif %}<td><span class="badge">{{ t.get_status_display }}</span></td></tr>{% empty %}<tr><td colspan="{% if transport_is_manager %}8{% else %}6{% endif %}" class="empty">No matching trips.</td></tr>{% endfor %}</tbody></table></div></section>
+{% block page_title %}Transport trips{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Trips · {{ branch.name }}</h1><p>Filter by departure date, customer, route or status. Cancelled records remain visible for audit.</p></div>{% if transport_is_manager %}<a class="btn btn-primary" href="{% url 'transport:trip_new' %}">New trip</a>{% endif %}</div>
+{% include 'kilasi_transport/_list_filters.html' %}
+<section class="card"><div class="table-wrap"><table>
+<thead><tr><th>Reference</th><th>Departure</th><th>Customer</th><th>Route</th><th>Vehicle / driver</th>{% if transport_is_manager %}<th>Charge</th><th>Collected</th>{% endif %}<th>Status</th><th>Action</th></tr></thead>
+<tbody>{% for t in rows %}<tr>
+<td><a class="table-link" href="{% url 'transport:trip_detail' t.pk %}">{{ t.reference }}</a></td>
+<td>{{ t.scheduled_start|date:'d M Y H:i' }}</td>
+<td>{{ t.customer_name }}</td>
+<td>{{ t.origin }} → {{ t.destination }}</td>
+<td>{{ t.vehicle.registration }}<small class="cell-sub">{{ t.driver.full_name }}</small></td>
+{% if transport_is_manager %}<td>{{ t.agreed_fee|money }}</td><td>{{ t.collected|money }}</td>{% endif %}
+<td><span class="badge">{{ t.get_status_display }}</span></td>
+<td><a class="btn btn-secondary btn-sm" href="{% url 'transport:trip_detail' t.pk %}">{% if transport_is_manager and t.status == 'planned' or transport_is_manager and t.status == 'in_progress' %}Manage{% else %}View{% endif %}</a></td>
+</tr>{% empty %}<tr><td colspan="{% if transport_is_manager %}9{% else %}7{% endif %}" class="empty">No matching trips.</td></tr>{% endfor %}</tbody>
+</table></div></section>
+{% include 'kilasi_transport/_pagination.html' %}
 {% endblock %}

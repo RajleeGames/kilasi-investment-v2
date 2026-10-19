@@ -64,6 +64,12 @@ class Trip(models.Model):
     agreed_fee = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(ZERO)])
     status = models.CharField(max_length=16, choices=STATES, default='planned')
     completed_at = models.DateTimeField(null=True, blank=True)
+    cancel_reason = models.CharField(max_length=200, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    cancelled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True,
+        related_name='kilasi_trips_cancelled',
+    )
     notes = models.TextField(blank=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='kilasi_trips_created')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -190,10 +196,11 @@ class TransportExpense(models.Model):
 # KILASI_V2_PHASE4B_ACCESS
 class TransportAccess(models.Model):
     """A strictly Transport-only identity, independent of Retail branches."""
-    ROLES = [('manager', 'Transport Manager'), ('staff', 'Transport Staff')]
+    ROLES = [('manager', 'Transport Manager'), ('staff', 'Transport Staff'), ('driver', 'Transport Driver')]
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='transport_access')
     branch = models.ForeignKey('core.Branch', on_delete=models.PROTECT, related_name='transport_accounts', null=True, blank=True)
     role = models.CharField(max_length=16, choices=ROLES, default='staff')
+    driver = models.OneToOneField('kilasi_transport.Driver', on_delete=models.PROTECT, null=True, blank=True, related_name='portal_access')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

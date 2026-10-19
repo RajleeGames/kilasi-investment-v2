@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}{{ trip.reference }} · {{ shop.name }}{% endblock %}
+{% block page_title %}Trip details{% endblock %}
+{% block body_class %}ki-driver-page{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ trip.reference }}</h1><p>{{ trip.origin }} → {{ trip.destination }} · HAMA NA KILASI</p></div>
+  <div class="head-actions">{% if trip.status == 'planned' %}<a class="btn btn-secondary" href="{% url 'transport:driver_trip_edit' trip.pk %}">Edit</a>{% endif %}<a class="btn btn-secondary" href="{% url 'transport:driver_home' %}">My trips</a></div>
+</div>
+<section class="card ki-driver-form-card">
+  <div class="card-head"><div><h2>Journey overview</h2><p><span class="badge">{{ trip.get_status_display }}</span></p></div></div>
+  <div class="ki-driver-detail-grid form-body">
+    <div><small>Customer</small><strong>{{ trip.customer_name }}</strong></div>
+    <div><small>Customer phone</small><strong>{{ trip.customer_phone|default:'—' }}</strong></div>
+    <div><small>Vehicle</small><strong>{{ trip.vehicle.registration }}</strong></div>
+    <div><small>Driver</small><strong>{{ trip.driver.full_name }}</strong></div>
+    <div><small>From</small><strong>{{ trip.origin }}</strong></div>
+    <div><small>To</small><strong>{{ trip.destination }}</strong></div>
+    <div><small>Scheduled departure</small><strong>{{ trip.scheduled_start|date:'d M Y H:i' }}</strong></div>
+    <div><small>Scheduled arrival</small><strong>{{ trip.scheduled_end|date:'d M Y H:i' }}</strong></div>
+    <div><small>Cargo details</small><strong>{{ trip.cargo_details|default:'—' }}</strong></div>
+    <div><small>Completed at</small><strong>{{ trip.completed_at|date:'d M Y H:i'|default:'—' }}</strong></div>
+    {% if trip.notes %}<div class="ki-driver-span-2"><small>Notes</small><strong>{{ trip.notes }}</strong></div>{% endif %}
+  </div>
+</section>
+<section class="card ki-driver-form-card section-gap">
+  <div class="card-head"><div><h2>Trip progress</h2><p>Status changes are recorded once and can trigger the approved SMS automation. Drivers may cancel a planned or in-transit trip with a reason. Payments and financial changes remain manager-only.</p></div></div>
+  <div class="form-body ki-driver-actions">
+    {% if trip.status == 'planned' %}
+      <form method="post" action="{% url 'transport:driver_trip_status' trip.pk %}" data-confirm="Start this journey?">
+        {% csrf_token %}<input type="hidden" name="status" value="in_progress"><button class="btn btn-primary" type="submit">Start trip · In transit</button>
+      </form>
+    {% elif trip.status == 'in_progress' %}
+      <form method="post" action="{% url 'transport:driver_trip_status' trip.pk %}" data-confirm="Confirm trip completed?">
+        {% csrf_token %}<input type="hidden" name="status" value="completed"><button class="btn btn-primary" type="submit">Mark trip completed</button>
+      </form>
+    {% elif trip.status == 'completed' %}
+      <div class="alert">This trip is complete. Its history is locked.</div>
+    {% else %}
+      <div class="alert">This trip cannot be updated by the driver.</div>
+    {% endif %}
+  </div>
+  {% if trip.status == 'planned' or trip.status == 'in_progress' %}
+    <div class="form-body ki-driver-void-section">
+      <h3>Void / cancel trip</h3>
+      <p class="cell-sub">Entered the wrong trip? Cancellation keeps the original record and is only possible when there are no active payments, linked bookings or posted trip expenses.</p>
+      <form method="post" action="{% url 'transport:driver_trip_status' trip.pk %}" data-confirm="Cancel this trip? The action will remain in the audit history.">
+        {% csrf_token %}
+        <input type="hidden" name="status" value="cancelled">
+        <div class="form-group">
+          <label for="driver-cancel-reason">Reason for cancellation <span aria-hidden="true">*</span></label>
+          <textarea id="driver-cancel-reason" name="reason" class="form-control" rows="2" minlength="5" maxlength="200" required placeholder="e.g. Wrong customer or route entered"></textarea>
+        </div>
+        <button class="btn btn-danger-soft" type="submit">Void this trip</button>
+      </form>
+    </div>
+  {% elif trip.status == 'cancelled' %}
+    <div class="form-body ki-driver-void-section">
+      <h3>Trip cancelled</h3>
+      <p><strong>Reason:</strong> {{ trip.cancel_reason|default:'No reason recorded' }}</p>
+      <p class="cell-sub">{{ trip.cancelled_at|date:'d M Y H:i' }} · {% if trip.cancelled_by %}{{ trip.cancelled_by.get_full_name|default:trip.cancelled_by.username }}{% endif %}</p>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

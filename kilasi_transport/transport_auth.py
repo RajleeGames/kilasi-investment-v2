@@ -11,7 +11,7 @@ def login_view(request):
     if request.user.is_authenticated:
         access = TransportAccess.objects.filter(user_id=request.user.pk).first()
         if access and not request.user.is_superuser and getattr(getattr(request.user, 'profile', None), 'role', None) != 'admin':
-            return redirect('transport:home') if access.is_active else HttpResponseForbidden('Transport account suspended.')
+            return redirect('transport:driver_home' if access.role == 'driver' else 'transport:home') if access.is_active else HttpResponseForbidden('Transport account suspended.')
     response = novman_login(request)
     if request.method == 'POST' and request.user.is_authenticated:
         access = TransportAccess.objects.filter(user_id=request.user.pk).first()
@@ -20,5 +20,5 @@ def login_view(request):
                 logout(request)
                 messages.error(request, 'This Transport account is suspended.')
                 return redirect('login')
-            return redirect('transport:home')
+            return redirect('transport:driver_home' if access.role == 'driver' else 'transport:home')
     return response

@@ -8,4 +8,5 @@ def transport_role(request):
         'transport_membership': member,
         'transport_is_manager': retail_admin(request.user) or bool(member and member.role == 'manager'),
         'transport_is_staff': bool(member and member.role == 'staff'),
+        'transport_is_driver': bool(member and member.role == 'driver'),
     }

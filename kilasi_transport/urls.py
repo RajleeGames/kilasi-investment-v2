@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, access_views
+from . import views, access_views, driver_views
 
 app_name = 'transport'
 
@@ -7,6 +7,12 @@ urlpatterns = [
     # KILASI_V2_PHASE4B_ACCESS
     path('users/', access_views.users, name='users'),
     path('users/<int:pk>/edit/', access_views.user_edit, name='user_edit'),
+    # Driver-only routes. Manager and Retail views retain their existing URLs.
+    path('driver/', driver_views.home, name='driver_home'),
+    path('driver/trips/new/', driver_views.trip_new, name='driver_trip_new'),
+    path('driver/trips/<int:pk>/', driver_views.trip_detail, name='driver_trip_detail'),
+    path('driver/trips/<int:pk>/edit/', driver_views.trip_edit, name='driver_trip_edit'),
+    path('driver/trips/<int:pk>/status/', driver_views.trip_status, name='driver_trip_status'),
     path('', views.dashboard, name='home'),
     path('vehicles/', views.vehicles, name='vehicles'),
     path('vehicles/new/', views.vehicle_edit, name='vehicle_new'),

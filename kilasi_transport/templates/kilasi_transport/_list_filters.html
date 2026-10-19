@@ -1,0 +1,30 @@
+{% for issue in filter_errors %}<div class="alert">{{ issue }}</div>{% endfor %}
+<form method="get" class="novman-filters card novman-panel ki-transport-filters" aria-label="Filter transport records">
+  <label>Search
+    <input name="q" type="search" class="form-control" value="{{ q }}" placeholder="Search records" maxlength="100">
+  </label>
+  <label>Status
+    <select name="status" class="form-control">
+      <option value="">All statuses</option>
+      {% for key, label in status_choices %}
+        <option value="{{ key }}" {% if status == key %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  {% if category_choices %}<label>Category
+    <select name="category" class="form-control"><option value="">All categories</option>
+    {% for key, label in category_choices %}<option value="{{ key }}" {% if category == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </label>{% endif %}
+  <label>From date
+    <input type="date" name="start" class="form-control" value="{{ start }}">
+  </label>
+  <label>To date
+    <input type="date" name="end" class="form-control" value="{{ end }}">
+  </label>
+  <div class="ki-filter-actions">
+    <button type="submit" class="btn btn-primary">Apply</button>
+    <a class="btn btn-secondary" href="{{ request.path }}">Reset</a>
+  </div>
+</form>
+<div class="ki-list-count">{{ total_rows }} matching record{{ total_rows|pluralize }}</div>

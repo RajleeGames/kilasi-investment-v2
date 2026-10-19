@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}{% if editing %}Edit trip{% else %}Create trip{% endif %} · {{ shop.name }}{% endblock %}
+{% block page_title %}{% if editing %}Edit trip{% else %}New trip{% endif %}{% endblock %}
+{% block body_class %}ki-driver-page{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% if editing %}Edit {{ trip.reference }}{% else %}Create transport trip{% endif %}</h1><p>HAMA NA KILASI · Your driver account is assigned automatically</p></div><a class="btn btn-secondary" href="{% if editing %}{% url 'transport:driver_trip_detail' trip.pk %}{% else %}{% url 'transport:driver_home' %}{% endif %}">Back</a></div>
+<section class="card ki-driver-form-card">
+  <div class="card-head"><div><h2>Trip details</h2><p>Enter the customer, vehicle, route, schedule and agreed amount. Only active, available vehicles can be selected.</p></div></div>
+  <form method="post" class="form-body" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert error">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="ki-driver-form-grid">
+      {% for field in form %}
+      <div class="form-group{% if field.name == 'notes' or field.name == 'cargo_details' %} ki-driver-span-2{% endif %}">
+        <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span aria-hidden="true">*</span>{% endif %}</label>
+        {{ field }}
+        {% if field.help_text %}<small class="cell-sub">{{ field.help_text }}</small>{% endif %}
+        {% for error in field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="form-actions ki-driver-actions"><button type="submit" class="btn btn-primary">{% if editing %}Save changes{% else %}Save planned trip{% endif %}</button><a class="btn btn-secondary" href="{% url 'transport:driver_home' %}">Cancel</a></div>
+  </form>
+</section>
+{% endblock %}

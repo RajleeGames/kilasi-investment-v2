@@ -24,7 +24,8 @@ def users(request):
             profile.role = 'cashier'  # Compatibility only, never grants Retail access.
             profile.branch = None
             profile.save(update_fields=['role','branch'])
-            TransportAccess.objects.create(user=user, branch=None, role=data['role'], is_active=True)
+            TransportAccess.objects.create(user=user, branch=None, role=data['role'],
+                driver=data['driver'] if data['role'] == 'driver' else None, is_active=True)
         messages.success(request, 'HAMA NA KILASI account created.')
         return redirect('transport:users')
     return render(request, 'kilasi_transport/users.html', {
@@ -40,13 +41,14 @@ def user_edit(request, pk):
     if user.is_superuser or user.is_staff or getattr(user.profile, 'role', '') == 'admin':
         return HttpResponseForbidden('Elevated accounts cannot be managed as Transport-only accounts.')
     form = TransportAccessEditForm(request.POST or None,
-              initial={'role':access.role,'is_active':access.is_active})
+              initial={'role':access.role,'is_active':access.is_active,'driver':access.driver_id}, access=access)
     if request.method == 'POST' and form.is_valid():
         data = form.cleaned_data
         with transaction.atomic():
             access.role = data['role']
+            access.driver = data['driver'] if data['role'] == 'driver' else None
             access.is_active = data['is_active']
-            access.save(update_fields=['role','is_active'])
+            access.save(update_fields=['role','driver','is_active'])
             user.is_active = data['is_active']
             fields = ['is_active']
             if data['new_password']:

@@ -4,6 +4,7 @@ Transport-only user roles and granular permissions are scheduled for a later
 phase. Do not loosen these views to ordinary retail cashiers.
 """
 from datetime import datetime, timedelta
+from .list_filters import filtered_page  # KILASI_TRANSPORT_FILTERS_V1
 from decimal import Decimal
 
 from django.contrib import messages
@@ -86,11 +87,13 @@ def dashboard(request):
 
 @transport_staff_required
 def vehicles(request):
-    q = (request.GET.get('q') or '').strip()
-    qs = Vehicle.objects.all()
-    if q:
-        qs = qs.filter(Q(registration__icontains=q) | Q(make_model__icontains=q))
-    return render(request, 'kilasi_transport/vehicles.html', _ctx(request, rows=qs[:250], q=q))
+    qs = Vehicle.objects.all().order_by('registration', 'id')
+    data = filtered_page(
+        request, qs, date_field='created_at__date',
+        search_fields=('registration', 'make_model', 'capacity'),
+        statuses=Vehicle.STATES,
+    )
+    return render(request, 'kilasi_transport/vehicles.html', _ctx(request, **data))
 
 
 @admin_required
@@ -106,11 +109,13 @@ def vehicle_edit(request, pk=None):
 
 @transport_staff_required
 def drivers(request):
-    q = (request.GET.get('q') or '').strip()
-    qs = Driver.objects.all()
-    if q:
-        qs = qs.filter(Q(full_name__icontains=q) | Q(phone__icontains=q) | Q(license_number__icontains=q))
-    return render(request, 'kilasi_transport/drivers.html', _ctx(request, rows=qs[:250], q=q))
+    qs = Driver.objects.all().order_by('full_name', 'id')
+    data = filtered_page(
+        request, qs, date_field='created_at__date',
+        search_fields=('full_name', 'phone', 'license_number'),
+        statuses=Driver.STATES,
+    )
+    return render(request, 'kilasi_transport/drivers.html', _ctx(request, **data))
 
 
 @admin_required
@@ -126,17 +131,16 @@ def driver_edit(request, pk=None):
 
 @transport_staff_required
 def trips(request):
-    branch = None
-    q = (request.GET.get('q') or '').strip()
-    status = (request.GET.get('status') or '').strip()
-    qs = Trip.objects.filter().select_related('vehicle', 'driver')
-    if q:
-        qs = qs.filter(Q(reference__icontains=q) | Q(customer_name__icontains=q) |
-                       Q(origin__icontains=q) | Q(destination__icontains=q) |
-                       Q(vehicle__registration__icontains=q))
-    if status in dict(Trip.STATES):
-        qs = qs.filter(status=status)
-    return render(request, 'kilasi_transport/trips.html', _ctx(request, rows=qs[:250], q=q, status=status))
+    qs = Trip.objects.select_related('vehicle', 'driver').order_by('-scheduled_start', '-pk')
+    data = filtered_page(
+        request, qs, date_field='scheduled_start__date',
+        search_fields=(
+            'reference', 'customer_name', 'customer_phone', 'origin',
+            'destination', 'vehicle__registration', 'driver__full_name',
+        ),
+        statuses=Trip.STATES,
+    )
+    return render(request, 'kilasi_transport/trips.html', _ctx(request, **data))
 
 
 @admin_required
@@ -177,23 +181,37 @@ def trip_detail(request, pk):
 @admin_required
 @require_POST
 def trip_status(request, pk):
-    branch = None
     action = (request.POST.get('status') or '').strip()
-    valid = {
+    reason = (request.POST.get('reason') or '').strip()
+    allowed = {
         'planned': {'in_progress', 'cancelled'},
         'in_progress': {'completed', 'cancelled'},
     }
     with transaction.atomic():
-        trip = get_object_or_404(Trip.objects.select_for_update(), pk=pk, )
-        if action not in valid.get(trip.status, set()):
-            messages.error(request, 'Invalid trip status transition.')
-        elif action == 'cancelled' and trip.payments.filter(is_voided=False).exists():
-            messages.error(request, 'This trip has payments. Void/refund those properly before cancellation.')
+        trip = get_object_or_404(Trip.objects.select_for_update(), pk=pk)
+        if action not in allowed.get(trip.status, set()):
+            messages.error(request, 'This trip cannot be changed from its current status.')
+        elif action == 'cancelled':
+            if len(reason) < 5 or len(reason) > 200:
+                messages.error(request, 'A cancellation reason of 5 to 200 characters is required.')
+            elif trip.payments.filter(is_voided=False).exists():
+                messages.error(request, 'Trip has active payments. Reconcile/refund and void them before cancelling.')
+            elif trip.bookings.filter(status__in=['pending', 'confirmed', 'completed']).exists():
+                messages.error(request, 'Cancel linked active bookings before cancelling this trip.')
+            else:
+                trip.status = 'cancelled'
+                trip.cancel_reason = reason
+                trip.cancelled_at = timezone.now()
+                trip.cancelled_by = request.user
+                trip.save(update_fields=['status', 'cancel_reason', 'cancelled_at', 'cancelled_by'])
+                messages.success(request, f'{trip.reference} cancelled. Original record and audit trail retained.')
         else:
             trip.status = action
             if action == 'completed':
                 trip.completed_at = timezone.now()
-            trip.save(update_fields=['status', 'completed_at'] if action == 'completed' else ['status'])
+                trip.save(update_fields=['status', 'completed_at'])
+            else:
+                trip.save(update_fields=['status'])
             messages.success(request, f'Trip marked {trip.get_status_display().lower()}.')
     return redirect('transport:trip_detail', pk=pk)
 
@@ -247,13 +265,13 @@ def payment_void(request, pk):
 
 @transport_staff_required
 def bookings(request):
-    branch = None
-    q = (request.GET.get('q') or '').strip()
-    qs = Booking.objects.filter().select_related('trip')
-    if q:
-        qs = qs.filter(Q(customer_name__icontains=q) | Q(customer_phone__icontains=q) |
-                       Q(reference__icontains=q) | Q(origin__icontains=q) | Q(destination__icontains=q))
-    return render(request, 'kilasi_transport/bookings.html', _ctx(request, rows=qs[:250], q=q))
+    qs = Booking.objects.select_related('trip').order_by('-requested_date', '-pk')
+    data = filtered_page(
+        request, qs, date_field='requested_date',
+        search_fields=('reference', 'customer_name', 'customer_phone', 'origin', 'destination'),
+        statuses=Booking.STATES,
+    )
+    return render(request, 'kilasi_transport/bookings.html', _ctx(request, **data))
 
 
 @transport_staff_required
@@ -300,17 +318,24 @@ def booking_status(request, pk):
 
 @admin_required
 def expenses(request):
-    branch = None
-    form = TransportExpenseForm(request.POST or None, )
+    form = TransportExpenseForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        item = form.save(commit=False)
-        item.branch = None
-        item.created_by = request.user
-        item.save()
+        with transaction.atomic():
+            item = form.save(commit=False)
+            item.branch = None
+            item.created_by = request.user
+            item.save()
         messages.success(request, 'Transport expense recorded.')
         return redirect('transport:expenses')
-    items = TransportExpense.objects.filter().select_related('trip', 'created_by')[:250]
-    return render(request, 'kilasi_transport/expenses.html', _ctx(request, form=form, rows=items))
+    qs = TransportExpense.objects.select_related('trip', 'created_by').order_by('-expense_date', '-pk')
+    data = filtered_page(
+        request, qs, date_field='expense_date',
+        search_fields=('description', 'trip__reference', 'created_by__username'),
+        statuses=(('posted', 'Posted'), ('voided', 'Voided')),
+        state_field='is_voided',
+        category_choices=TransportExpense.CATEGORIES,
+    )
+    return render(request, 'kilasi_transport/expenses.html', _ctx(request, form=form, **data))
 
 
 @admin_required

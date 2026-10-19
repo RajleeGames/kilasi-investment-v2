@@ -1,0 +1,55 @@
+{% extends 'base.html' %}{% load mfp %}
+{% block title %}My trips · {{ shop.name }}{% endblock %}
+{% block page_title %}Driver workspace{% endblock %}
+{% block body_class %}ki-driver-page{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Welcome back, {{ driver.full_name }}!</h1><p>HAMA NA KILASI · Your personal driver dashboard. Only trips assigned to you appear here.</p></div>
+  <a class="btn btn-primary" href="{% url 'transport:driver_trip_new' %}">+ Add trip</a>
+</div>
+<div class="ki-driver-stats">
+  <article class="novman-stat"><label>Planned</label><strong>{{ planned }}</strong></article>
+  <article class="novman-stat"><label>In transit</label><strong>{{ underway }}</strong></article>
+  <article class="novman-stat"><label>Completed</label><strong>{{ completed }}</strong></article>
+</div>
+<form method="get" action="{% url 'transport:driver_home' %}" class="card novman-filters ki-driver-filters" aria-label="Filter my trips">
+  <label>Search<input class="form-control" type="search" name="q" maxlength="90" placeholder="Trip, route or customer" value="{{ q }}"></label>
+  <label>Status<select class="form-control" name="status"><option value="">All statuses</option><option value="planned" {% if status == 'planned' %}selected{% endif %}>Planned</option><option value="in_progress" {% if status == 'in_progress' %}selected{% endif %}>In transit</option><option value="completed" {% if status == 'completed' %}selected{% endif %}>Completed</option><option value="cancelled" {% if status == 'cancelled' %}selected{% endif %}>Cancelled</option></select></label>
+  <label>From<input class="form-control" type="date" name="start" value="{{ start }}"></label>
+  <label>To<input class="form-control" type="date" name="end" value="{{ end }}"></label>
+  <button class="btn btn-primary" type="submit">Filter</button><a class="btn btn-secondary" href="{% url 'transport:driver_home' %}">Reset</a>
+</form>
+<section class="card ki-driver-list-panel">
+  <div class="card-head"><div><h2>My assigned trips</h2><p>{{ page_obj.paginator.count }} matching trips · 15 per page · No bookings or financial actions</p></div></div>
+  <div class="ki-driver-cards">
+    {% for trip in rows %}
+    <article class="ki-driver-card">
+      <div class="ki-driver-card-top"><a class="table-link" href="{% url 'transport:driver_trip_detail' trip.pk %}"><strong>{{ trip.reference }}</strong></a><span class="badge">{{ trip.get_status_display }}</span></div>
+      
+<div class="ki-driver-route">
+    {{ trip.origin }}
+    <span aria-hidden="true">→</span>
+    {{ trip.destination }}
+</div>
+
+<p class="cell-sub">
+    <strong>Customer:</strong>
+    {{ trip.customer_name }}
+</p>
+
+      <div class="ki-driver-card-meta"><span><small>Departure</small><strong>{{ trip.scheduled_start|date:'d M Y H:i' }}</strong></span><span><small>Vehicle</small><strong>{{ trip.vehicle.registration }}</strong></span></div>
+      <a class="btn btn-secondary btn-sm ki-driver-open" href="{% url 'transport:driver_trip_detail' trip.pk %}">View trip</a>
+    </article>
+    {% empty %}<p class="empty">No trips match these filters.</p>{% endfor %}
+  </div>
+  {% if page_obj.paginator.num_pages > 1 %}
+  <nav class="ki-driver-pagination" aria-label="Trip pages">
+    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    <div class="head-actions">
+      {% if page_obj.has_previous %}<a class="btn btn-secondary btn-sm" href="{{ page_prefix }}{{ page_obj.previous_page_number }}">← Previous</a>{% endif %}
+      {% if page_obj.has_next %}<a class="btn btn-secondary btn-sm" href="{{ page_prefix }}{{ page_obj.next_page_number }}">Next →</a>{% endif %}
+    </div>
+  </nav>
+  {% endif %}
+</section>
+{% endblock %}

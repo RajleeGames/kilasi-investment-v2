@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
 <!-- KILASI_V2_PHASE1_BRANDING -->
   <title>{% block title %}{{ shop.name }}{% endblock %}</title>
-  <link rel="stylesheet" href="{% static 'core/app.css' %}?v=30">
+  <link rel="stylesheet" href="{% static 'core/app.css' %}?v=32">
   {% block extra_head %}{% endblock %}
 </head>
 <body class="app-body {% block body_class %}{% endblock %}">
@@ -27,7 +27,7 @@
 <div class="app-shell">
   <aside class="sidebar" id="sidebar" aria-label="Main sidebar">
     <div class="sidebar-inner">
-      <a class="brand" href="{% if transport_membership %}{% url 'transport:home' %}{% elif novman_can_switch_branch %}{% url 'dashboard' %}{% else %}{% url 'pos' %}{% endif %}" title="{{ shop.name }}">
+      <a class="brand" href="{% if transport_is_driver %}{% url 'transport:driver_home' %}{% elif transport_membership %}{% url 'transport:home' %}{% elif novman_can_switch_branch %}{% url 'dashboard' %}{% else %}{% url 'pos' %}{% endif %}" title="{{ shop.name }}">
         {% if shop.logo %}
           <span class="brand-logo"><img src="{{ shop.logo.url }}" alt="{{ shop.name }} logo"></span>
         {% else %}
@@ -35,13 +35,23 @@
         {% endif %}
         <span class="brand-copy">
           <span class="brand-name">{{ shop.name }}</span>
-          <span class="brand-sub">Retail Management</span>
+          <span class="brand-sub">{% if transport_is_driver %}Driver operations{% else %}Retail Management{% endif %}</span>
         </span>
       </a>
 
       <nav class="nav-list" aria-label="Main navigation">
         <!-- KILASI_V2_PHASE6B_SIDEBAR: Dashboards, Business, Inventory, Trade, HAMA NA KILASI, SMS, Admin -->
         {% if transport_membership %}
+          {% if transport_is_driver %}
+          <a href="{% url 'transport:driver_home' %}" class="nav-item nav-direct {% if request.resolver_match.url_name == 'driver_home' %}active{% endif %}"><span class="ico" data-icon="dashboard"></span><span class="nav-label">Driver dashboard</span></a>
+          <div class="nav-group {% if request.resolver_match.url_name != 'driver_home' %}open active-group{% endif %}" data-nav-group="driver-trips">
+            <button type="button" class="nav-group-toggle" aria-expanded="true" title="My Transport Trips"><span class="ico" data-icon="products"></span><span class="nav-label">My Transport Trips</span><span class="nav-group-chevron"></span></button>
+            <div class="nav-submenu"><div class="nav-submenu-inner">
+              <a href="{% url 'transport:driver_home' %}" class="nav-subitem"><span class="nav-child-dot"></span>My trips</a>
+              <a href="{% url 'transport:driver_trip_new' %}" class="nav-subitem"><span class="nav-child-dot"></span>Create trip</a>
+            </div></div>
+          </div>
+          {% else %}
           <a href="{% url 'transport:home' %}" class="nav-item nav-direct {% if request.resolver_match.namespace == 'transport' and request.resolver_match.url_name == 'home' %}active{% endif %}"><span class="ico" data-icon="dashboard"></span><span class="nav-label">HAMA NA KILASI Dashboard</span></a>
           <div class="nav-group {% if request.resolver_match.namespace == 'transport' %}open active-group{% endif %}" data-nav-group="hama-na-kilasi">
             <button type="button" class="nav-group-toggle" title="HAMA NA KILASI" aria-expanded="{% if request.resolver_match.namespace == 'transport' %}true{% else %}false{% endif %}"><span class="ico" data-icon="products"></span><span class="nav-label">HAMA NA KILASI</span><span class="nav-group-chevron"></span></button>
@@ -65,6 +75,7 @@
               <a class="nav-subitem" href="{% url 'transport_sms:history' %}"><span class="nav-child-dot"></span>SMS history</a>
             </div></div>
           </div>{% endif %}
+          {% endif %}
         {% else %}
           {% if novman_can_switch_branch %}
             <a href="{% url 'dashboard' %}" class="nav-item nav-direct {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><span class="ico" data-icon="dashboard"></span><span class="nav-label">Main Dashboard</span></a>
@@ -220,7 +231,7 @@
             </div>
             <div class="user-menu-links">
               {% if transport_membership %}
-              <a href="{% url 'transport:home' %}" role="menuitem"><span data-icon="dashboard"></span><span>HAMA NA KILASI</span></a>
+              <a href="{% if transport_is_driver %}{% url 'transport:driver_home' %}{% else %}{% url 'transport:home' %}{% endif %}" role="menuitem"><span data-icon="dashboard"></span><span>HAMA NA KILASI</span></a>
               {% else %}
               {% if novman_can_switch_branch %}<a href="{% url 'dashboard' %}" role="menuitem"><span data-icon="dashboard"></span><span>Dashboard</span></a>{% endif %}
               <a href="{% url 'end_day' %}" role="menuitem"><span data-icon="reports"></span><span>End Day</span></a>

@@ -1,6 +1,20 @@
 {% extends 'base.html' %}{% load mfp %}
-{% block page_title %}Transport expenses{% endblock %}{% block content %}
-<div class="page-head"><div><h1>Transport expenses</h1><p>Fuel, driver allowances, maintenance and operating costs · {{ branch.name }}.</p></div><a class="btn btn-secondary" href="{% url 'transport:reports' %}">Transport reports</a></div>
-<section class="card kt-form-card"><div class="card-head"><div><h2>Record an expense</h2><p>Posted records cannot be edited or deleted. Corrections must be voided with a reason.</p></div></div><form method="post" class="form-body" novalidate>{% csrf_token %}<div class="kt-form-grid">{% for field in form %}<div class="form-group"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<span class="field-error">{{ field.errors|striptags }}</span>{% endif %}</div>{% endfor %}</div><div class="form-actions"><button class="btn btn-primary" type="submit">Save expense</button></div></form></section>
-<section class="card section-gap"><div class="card-head"><div><h2>Expense history</h2><p>Branch-specific transport costs only.</p></div></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Trip</th><th>Amount</th><th>State</th><th>Action</th></tr></thead><tbody>{% for x in rows %}<tr><td>{{ x.expense_date|date:'d M Y' }}</td><td>{{ x.get_category_display }}</td><td>{{ x.description }}</td><td>{% if x.trip_id %}<a class="table-link" href="{% url 'transport:trip_detail' x.trip_id %}">{{ x.trip.reference }}</a>{% else %}General{% endif %}</td><td>{{ x.amount|money }} TZS</td><td>{% if x.is_voided %}Voided{% else %}Posted{% endif %}</td><td>{% if x.is_voided %}{{ x.void_reason }}{% else %}<form class="kt-inline-form" method="post" action="{% url 'transport:expense_void' x.pk %}">{% csrf_token %}<input class="form-control" name="reason" maxlength="200" placeholder="Reason" required><button class="btn btn-danger-soft btn-sm">Void</button></form>{% endif %}</td></tr>{% empty %}<tr><td colspan="7" class="empty">No transport expenses yet.</td></tr>{% endfor %}</tbody></table></div></section>
-{% endblock %}
+{% block page_title %}Transport expenses{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Transport expenses</h1><p>Fuel, allowances, maintenance and operating costs. Corrections retain the original record.</p></div><a class="btn btn-secondary" href="{% url 'transport:reports' %}">Transport reports</a></div>
+<section class="card kt-form-card"><div class="card-head"><div><h2>Record an expense</h2><p>Posted expenses are immutable; void with a reason if incorrectly entered.</p></div></div>
+<form method="post" class="form-body" novalidate>{% csrf_token %}
+<div class="kt-form-grid">{% for field in form %}<div class="form-group"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<span class="field-error">{{ field.errors|striptags }}</span>{% endif %}</div>{% endfor %}</div>
+<div class="form-actions"><button class="btn btn-primary" type="submit">Save expense</button></div></form></section>
+<section class="section-gap"><div class="page-head"><div><h2>Expense history</h2><p>Filter by expense date, description, trip or posted/voided state.</p></div></div>
+{% include 'kilasi_transport/_list_filters.html' %}
+<section class="card"><div class="table-wrap"><table><thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Trip</th><th>Amount</th><th>State</th><th>Action / audit</th></tr></thead><tbody>
+{% for x in rows %}<tr><td>{{ x.expense_date|date:'d M Y' }}</td><td>{{ x.get_category_display }}</td><td>{{ x.description }}</td>
+<td>{% if x.trip_id %}<a class="table-link" href="{% url 'transport:trip_detail' x.trip_id %}">{{ x.trip.reference }}</a>{% else %}General{% endif %}</td>
+<td>{{ x.amount|money }} TZS</td><td><span class="badge">{% if x.is_voided %}Voided{% else %}Posted{% endif %}</span></td>
+<td>{% if x.is_voided %}<span class="cell-sub">{{ x.void_reason }}</span>{% else %}
+<form method="post" class="ki-void-form" action="{% url 'transport:expense_void' x.pk %}" data-confirm="Void this expense? The original will remain in history.">{% csrf_token %}<input class="form-control" name="reason" maxlength="200" minlength="5" placeholder="Reason for voiding" required><button class="btn btn-danger-soft btn-sm">Void</button></form>{% endif %}</td></tr>
+{% empty %}<tr><td colspan="7" class="empty">No matching expenses.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% include 'kilasi_transport/_pagination.html' %}
+</section>{% endblock %}

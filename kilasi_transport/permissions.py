@@ -34,7 +34,8 @@ def _requires(required):
             if retail_admin(request.user):
                 return view(request, *args, **kwargs)
             member = transport_member(request)
-            if member and (required == 'staff' or (required == 'manager' and member.role == 'manager')):
+            if member and ((required == 'staff' and member.role in ('staff','manager')) or
+                       (required == 'manager' and member.role == 'manager')):
                 return view(request, *args, **kwargs)
             return HttpResponseForbidden('You do not have permission for this Transport operation.')
         return wrapped

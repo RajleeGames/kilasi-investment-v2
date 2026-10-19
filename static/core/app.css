@@ -4382,3 +4382,76 @@ button:focus-visible,.btn:focus-visible,.nav-item:focus-visible,.nav-group-toggl
 .ki-native .ki-filter .btn{white-space:nowrap}
 @media(max-width:720px){.ki-native .page-head{flex-wrap:wrap}.ki-native .ki-filter label{max-width:none;min-width:130px}.ki-native .ki-stage-tag{font-size:9px}.ki-native .ki-section-head{padding:12px}}
 /* END KILASI_STAGE7F_NATIVE */
+
+/* KILASI_TRANSPORT_FILTERS_V1: shared transport lists, responsive and compact */
+.ki-transport-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));align-items:end;gap:12px;margin-bottom:10px}
+.ki-transport-filters label{display:flex;flex-direction:column;gap:6px;min-width:0;font-size:12px;font-weight:600}
+.ki-transport-filters .form-control{width:100%;min-width:0}
+.ki-filter-actions,.ki-page-links{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.ki-list-count{margin:8px 0 12px;font-size:12px;opacity:.75}
+.ki-pagination{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;font-size:12px}
+.ki-void-form{display:flex;align-items:center;gap:7px;min-width:200px}
+.ki-void-form .form-control{min-width:120px;max-width:240px}
+.ki-cancel-audit{border-left:3px solid #b54e46;padding:12px 16px;margin-top:16px}
+@media(max-width:1100px){.ki-transport-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.ki-filter-actions{align-self:end}}
+@media(max-width:600px){.ki-transport-filters{grid-template-columns:minmax(0,1fr)}.ki-filter-actions .btn{flex:1}.ki-pagination{align-items:flex-start;flex-direction:column}.ki-void-form{flex-wrap:wrap}}
+
+
+/* KI_DRIVER_SHARED_V1 - one existing app.css; base.html controls sidebar. */
+.ki-driver-page .page-content{min-width:0}
+.ki-driver-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:16px}
+.ki-driver-stats .novman-stat{min-width:0}
+.ki-driver-filters{display:flex;align-items:end;flex-wrap:wrap;gap:12px;margin-bottom:18px;padding:14px}
+.ki-driver-filters label{flex:1 1 145px;min-width:0;display:grid;gap:6px;font-size:12px;font-weight:600}
+.ki-driver-filters .form-control{width:100%;min-width:0}
+.ki-driver-list-panel{overflow:hidden}
+.ki-driver-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:16px}
+.ki-driver-card{display:grid;gap:12px;border:1px solid #dce5f0;border-radius:12px;background:#fff;padding:15px;min-width:0}
+.ki-driver-card-top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.ki-driver-route{font-weight:650;font-size:14px;overflow-wrap:anywhere}
+.ki-driver-card-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.ki-driver-card-meta span,.ki-driver-detail-grid>div{display:grid;gap:4px;min-width:0}
+.ki-driver-card-meta small,.ki-driver-detail-grid small{font-size:11px;color:#657b92}
+.ki-driver-card-meta strong,.ki-driver-detail-grid strong{font-size:13px;overflow-wrap:anywhere}
+.ki-driver-open{justify-self:start}
+.ki-driver-pagination{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 16px;border-top:1px solid #dce5f0;font-size:13px}
+.ki-driver-form-card{max-width:1050px;margin-left:auto;margin-right:auto}
+.ki-driver-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.ki-driver-form-grid .form-group{min-width:0}
+.ki-driver-span-2{grid-column:1/-1}
+.ki-driver-form-grid .form-control{width:100%;max-width:100%;min-width:0}
+.ki-driver-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.ki-driver-actions{display:flex;gap:12px;flex-wrap:wrap}
+.ki-driver-actions form{max-width:100%}
+@media(max-width:900px){.ki-driver-cards{grid-template-columns:1fr}}
+@media(max-width:600px){
+ .ki-driver-page .page-head{display:flex;flex-direction:column;align-items:stretch;gap:12px}
+ .ki-driver-page .page-head>.btn{width:100%;text-align:center}
+ .ki-driver-page .page-content{padding-left:12px;padding-right:12px}
+ .ki-driver-stats{gap:7px}
+ .ki-driver-stats .novman-stat{padding:11px 8px}
+ .ki-driver-stats .novman-stat strong{font-size:22px}
+ .ki-driver-stats .novman-stat label{font-size:11px}
+ .ki-driver-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px}
+ .ki-driver-filters label{grid-column:1/-1}
+ .ki-driver-filters .btn{min-height:44px;width:100%;text-align:center}
+ .ki-driver-cards{padding:11px;gap:10px}
+ .ki-driver-card{padding:13px}
+ .ki-driver-card .btn{width:100%;min-height:44px;text-align:center}
+ .ki-driver-form-grid,.ki-driver-detail-grid{grid-template-columns:minmax(0,1fr)}
+ .ki-driver-actions{flex-direction:column}
+ .ki-driver-actions>*{width:100%}
+ .ki-driver-actions .btn{width:100%;min-height:44px}
+ .ki-driver-card-meta{gap:8px}
+ .ki-driver-pagination .head-actions{display:flex;gap:8px;flex-wrap:wrap}
+}
+
+/* KI_DRIVER_TRIP_ONLY_V2: new UI on the one existing shared app.css. */
+.ki-driver-void-section{width:100%;border-top:1px solid #dce5f0;margin-top:10px;padding-top:18px}
+.ki-driver-void-section h3{margin:0 0 6px;font-size:15px}
+.ki-driver-void-section p{margin:0 0 12px;font-size:13px}
+.ki-driver-void-section form{display:grid;gap:12px;max-width:620px}
+.ki-driver-void-section .form-group{display:grid;gap:7px;min-width:0}
+.ki-driver-void-section textarea{width:100%;box-sizing:border-box;resize:vertical;min-height:80px}
+.ki-driver-void-section .btn{justify-self:start;min-height:44px}
+@media(max-width:600px){.ki-driver-void-section .btn{width:100%}.ki-driver-void-section{padding:16px 0}}
