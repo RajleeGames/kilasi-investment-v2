@@ -41,11 +41,31 @@ CSRF_COOKIE_SECURE=True
 SECURE_PROXY_SSL_HEADER=('HTTP_X_FORWARDED_PROTO','https')
 SECURE_SSL_REDIRECT=True
 USE_THOUSAND_SEPARATOR=True
-KILASI_SMS_LIVE_ENABLED=False
-KILASI_SMS_AUTOMATION_ENABLED=False
-BEEM_API_KEY=''
-BEEM_SECRET_KEY=''
+# ==========================================
+# BEEM SMS PRODUCTION CONFIGURATION
+# ==========================================
+
+KILASI_SMS_LIVE_ENABLED = env_bool(
+    "KILASI_SMS_LIVE_ENABLED",
+    default=False,
+)
+
+KILASI_SMS_AUTOMATION_ENABLED = env_bool(
+    "KILASI_SMS_AUTOMATION_ENABLED",
+    default=False,
+)
+
+BEEM_API_KEY = os.getenv("BEEM_API_KEY", "").strip()
+BEEM_SECRET_KEY = os.getenv("BEEM_SECRET_KEY", "").strip()
+BEEM_SENDER_ID = os.getenv("BEEM_SENDER_ID", "KILASI LTD").strip()
 BEEM_DLR_TOKEN=''
-BEEM_SEND_URL='http://127.0.0.1:1/sms-disabled'
-BEEM_BALANCE_URL='http://127.0.0.1:1/sms-disabled'
+BEEM_SEND_URL = _os.getenv(
+    "BEEM_SEND_URL",
+    "https://apisms.beem.africa/v1/send",
+).strip()
+
+BEEM_BALANCE_URL = _os.getenv(
+    "BEEM_BALANCE_URL",
+    "https://apisms.beem.africa/public/v1/vendors/balance",
+).strip()
 EMAIL_BACKEND='django.core.mail.backends.console.EmailBackend'

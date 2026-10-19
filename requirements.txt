@@ -6,3 +6,4 @@ typing_extensions==4.16.0
 tzdata==2026.3
 
 gunicorn==23.0.0
+requests==2.34.2
