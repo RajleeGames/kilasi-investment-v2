@@ -19,7 +19,10 @@ from kilasi_legacy_viewer.hama_final_views import (
     _filters,
     historical_summary,
 )
-from kilasi_legacy_viewer.views import archival_conn
+from kilasi_legacy_viewer.views import (
+    archival_conn,
+    can_view_history,
+)
 
 
 register = template.Library()
@@ -57,11 +60,8 @@ def hama_dashboard_panel(context):
     request = context["request"]
 
     # Historical financial information is superuser-only.
-    if (
-        not request.user.is_authenticated
-        or not request.user.is_superuser
-    ):
-        return {"hama_hidden": True}
+    if not can_view_history(request.user):
+     return {"hama_hidden": True}
 
     # Fresh development databases have no migration archive.
     if not historical_archive_available():

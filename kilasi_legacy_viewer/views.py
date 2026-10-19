@@ -21,13 +21,37 @@ def archival_conn():
     return c
 
 
+
+def can_view_history(user):
+    """
+    Allow active company Admins and superusers
+    to view read-only historical records.
+    """
+
+    if not user.is_authenticated or not user.is_active:
+        return False
+
+    if user.is_superuser:
+        return True
+
+    profile = getattr(user, "profile", None)
+
+    return getattr(profile, "role", None) == "admin"
+
+
 def admin_only(view):
     @login_required
     def wrapped(request, *args, **kwargs):
-        if not request.user.is_superuser:
-            raise PermissionDenied('Only a superuser may inspect the private historical archive.')
+
+        if not can_view_history(request.user):
+            raise PermissionDenied(
+                "Only company administrators can view historical records."
+            )
+
         return view(request, *args, **kwargs)
+
     return wrapped
+
 
 
 # Labels and SQL are constants: no dynamic table names or arbitrary SQL from browser.
