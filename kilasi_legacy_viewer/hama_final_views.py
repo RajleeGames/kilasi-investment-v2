@@ -98,6 +98,19 @@ def history_records(request, kind):
         selected = '''t.id AS id,t.booking_datetime AS event_date,t.customer_name AS customer,
             t.pickup_area AS origin,t.destination AS destination,'—' AS vehicle,
             t.status AS status,0 AS amount,'CLOSED_ARCHIVE' AS closed_status'''
+        # Phase9F: show the VERIFIED final status of 106 and 107 without
+        # modifying the original 7B archive, which remains immutable.
+        with closing(archival_conn()) as _probe:
+            _has_final_booking_corrections = bool(_probe.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' "
+                "AND name='kilasi_stage9_booking_closeout_corrections'"
+            ).fetchone())
+        if _has_final_booking_corrections:
+            source += (" LEFT JOIN kilasi_stage9_booking_closeout_corrections b9 "
+                       "ON b9.legacy_booking_id=t.id")
+            conditions[1] = "(:status='' OR COALESCE(b9.final_status,t.status)=:status)"
+            selected = selected.replace('t.status AS status',
+                                        'COALESCE(b9.final_status,t.status) AS status')
         date_label='Booking date'
         title='Closed bookings'
     else:
