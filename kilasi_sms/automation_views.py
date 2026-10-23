@@ -65,8 +65,10 @@ def automations(request):
         row=existing.get(key)
         rules.append({'key':key,'name':name,'rule':row,'template_id':row.template_id if row else
                       (preset_by_name[preset].pk if preset in preset_by_name else None)})
-    jobs=(KilasiSmsAutomaticJob.objects.filter(**({'branch':branch,'rule__department':department} if department=='retail' else {'rule__department':department}))
+    jobs=list(KilasiSmsAutomaticJob.objects.filter(**({'branch':branch,'rule__department':department} if department=='retail' else {'rule__department':department}))
           .select_related('campaign').order_by('-created_at')[:35])
+    from .automation import can_manually_retry
+    for job in jobs: job.can_retry_from_page = department == 'transport' and can_manually_retry(job)
     return render(request,'kilasi_sms/automations.html',{
         'department':department,'department_name':'HAMA NA KILASI' if department=='transport' else 'Kilasi Retail',
         'branch':(branch if department=='retail' else SimpleNamespace(name='HAMA NA KILASI')),'rules':rules,'senders':senders,'templates':templates,
@@ -74,6 +76,28 @@ def automations(request):
         'save_url':url,
         'sms_url':reverse(f'{ns}:hub'),
     })
+
+
+@require_POST
+def retry_transport_sms(request, pk):
+    from django.core.exceptions import ValidationError
+    from .automation import manual_retry_job
+    department, branch = scope(request)
+    if department != 'transport':
+        return HttpResponseForbidden('Only HAMA NA KILASI managers can retry transport SMS.')
+    job = get_object_or_404(KilasiSmsAutomaticJob, pk=pk, branch__isnull=True,
+                            event_key__startswith='transport.')
+    try:
+        manual_retry_job(job.pk, request.user, request.POST.get('reason',''),
+                         confirmed_unsubmitted=(request.POST.get('beem_checked')=='on'))
+    except ValidationError as exc:
+        messages.error(request, '; '.join(exc.messages))
+    else:
+        messages.success(request, 'SMS queued for worker processing. This page did not send it immediately.')
+    source=(request.POST.get('return_to') or '')
+    if source == 'trips':
+        return redirect('transport:trips')
+    return redirect('transport_sms:automations')
 
 
 @require_POST

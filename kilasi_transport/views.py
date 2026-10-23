@@ -9,7 +9,7 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -46,14 +46,21 @@ def _sum(queryset, field):
     return queryset.aggregate(v=Sum(field))['v'] or ZERO
 
 
-def _finance(branch, start, end):
+def _finance(branch, start, end, vehicle_id=None, driver_id=None):
     completed = Trip.objects.filter(status='completed', completed_at__date__range=(start, end))
     payments = TripPayment.objects.filter(is_voided=False, paid_at__date__range=(start, end))
     expenses = TransportExpense.objects.filter(is_voided=False, expense_date__range=(start, end))
+    trip_scope={}
+    if vehicle_id: trip_scope['vehicle_id']=vehicle_id
+    if driver_id: trip_scope['driver_id']=driver_id
+    if trip_scope:
+        completed=completed.filter(**trip_scope)
+        payments=payments.filter(**{'trip__'+k:v for k,v in trip_scope.items()})
+        expenses=expenses.filter(**{'trip__'+k:v for k,v in trip_scope.items()})
     earned = _sum(completed, 'agreed_fee')
     collected = _sum(payments, 'amount')
     spent = _sum(expenses, 'amount')
-    lifetime_due = sum((trip.balance for trip in Trip.objects.filter(status='completed').prefetch_related('payments')), ZERO)
+    lifetime_due = sum((trip.balance for trip in Trip.objects.filter(status='completed', **trip_scope).prefetch_related('payments')), ZERO)
     return {'earned': earned, 'collected': collected, 'spent': spent,
             'cash_net': collected - spent, 'period_margin': earned - spent,
             'outstanding': lifetime_due, 'completed_count': completed.count(),
@@ -73,14 +80,32 @@ def dashboard(request):
             'vehicle_count': Vehicle.objects.filter(status='active').count(),
             'recent_trips': Trip.objects.filter().select_related('vehicle')[:12],
         })
-    summary = _finance(branch, start, end)
+    selected_vehicle=(request.GET.get('vehicle') or '').strip()
+    selected_driver=(request.GET.get('driver') or '').strip()
+    vehicle_id=int(selected_vehicle) if selected_vehicle.isdecimal() and len(selected_vehicle)<12 and Vehicle.objects.filter(pk=selected_vehicle).exists() else None
+    driver_id=int(selected_driver) if selected_driver.isdecimal() and len(selected_driver)<12 and Driver.objects.filter(pk=selected_driver).exists() else None
+    filtered=bool(vehicle_id or driver_id)
+    summary = _finance(branch, start, end, vehicle_id, driver_id)
+    all_completed=Trip.objects.filter(status='completed', completed_at__date__range=(start,end))
+    if vehicle_id: all_completed=all_completed.filter(vehicle_id=vehicle_id)
+    if driver_id: all_completed=all_completed.filter(driver_id=driver_id)
+    ranks=(all_completed.values('driver_id','driver__full_name')
+           .annotate(trip_count=Count('pk'),total_charges=Sum('agreed_fee'))
+           .order_by('-trip_count','-total_charges','driver__full_name'))
+    recent_scope=Trip.objects.select_related('vehicle','driver')
+    if vehicle_id: recent_scope=recent_scope.filter(vehicle_id=vehicle_id)
+    if driver_id: recent_scope=recent_scope.filter(driver_id=driver_id)
     return render(request, 'kilasi_transport/dashboard.html', {
         **_ctx(request, **summary), 'start': start, 'end': end,
         'vehicle_count': Vehicle.objects.filter(status='active').count(),
         'driver_count': Driver.objects.filter(status='active').count(),
         'open_trips': Trip.objects.filter(status__in=['planned', 'in_progress']).count(),
         'pending_bookings': Booking.objects.filter(status='pending').count(),
-        'recent_trips': Trip.objects.filter().select_related('vehicle', 'driver')[:12],
+        'recent_trips': recent_scope[:12],
+        'vehicle_choices': Vehicle.objects.order_by('registration'),
+        'driver_choices': Driver.objects.order_by('full_name'),
+        'selected_vehicle': str(vehicle_id or ''), 'selected_driver': str(driver_id or ''),
+        'scoped_finance': filtered, 'driver_ranks': ranks,
         'recent_bookings': Booking.objects.filter()[:8],
     })
 
@@ -138,8 +163,21 @@ def trips(request):
             'reference', 'customer_name', 'customer_phone', 'origin',
             'destination', 'vehicle__registration', 'driver__full_name',
         ),
-        statuses=Trip.STATES,
+        statuses=Trip.STATES, vehicle_field='vehicle_id',driver_field='driver_id',
     )
+    from kilasi_sms.models import KilasiSmsAutomaticJob
+    from kilasi_sms.automation import can_manually_retry
+    trip_ids=[t.pk for t in data['rows']]
+    jobs=KilasiSmsAutomaticJob.objects.filter(branch__isnull=True,
+        event_key__startswith='transport.trip_',source_id__in=trip_ids).order_by('pk')
+    by_trip={}
+    for job in jobs:
+        job.can_retry_from_page=can_manually_retry(job)
+        by_trip.setdefault(job.source_id,[]).append(job)
+    for trip in data['rows']:
+        trip.sms_jobs=by_trip.get(trip.pk,[])
+    data.update(vehicle_choices=Vehicle.objects.order_by('registration'),
+                driver_choices=Driver.objects.order_by('full_name'))
     return render(request, 'kilasi_transport/trips.html', _ctx(request, **data))
 
 

@@ -397,11 +397,11 @@ def apply_delivery_report(payload):
             continue
 
         normalized_status = provider_status.lower()
-        if any(word in normalized_status for word in ("deliver", "success")):
+        if any(word in normalized_status for word in ("fail", "reject", "undeliver", "expire")):
+            recipient.status = SmsRecipient.Status.FAILED
+        elif any(word in normalized_status for word in ("deliver", "success")):
             recipient.status = SmsRecipient.Status.DELIVERED
             recipient.delivered_at = timezone.now()
-        elif any(word in normalized_status for word in ("fail", "reject", "undeliver", "expire")):
-            recipient.status = SmsRecipient.Status.FAILED
         elif normalized_status:
             recipient.status = SmsRecipient.Status.SENT
 

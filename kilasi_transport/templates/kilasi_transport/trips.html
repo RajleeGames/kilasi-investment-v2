@@ -4,7 +4,7 @@
 <div class="page-head"><div><h1>Trips · {{ branch.name }}</h1><p>Filter by departure date, customer, route or status. Cancelled records remain visible for audit.</p></div>{% if transport_is_manager %}<a class="btn btn-primary" href="{% url 'transport:trip_new' %}">New trip</a>{% endif %}</div>
 {% include 'kilasi_transport/_list_filters.html' %}
 <section class="card"><div class="table-wrap"><table>
-<thead><tr><th>Reference</th><th>Departure</th><th>Customer</th><th>Route</th><th>Vehicle / driver</th>{% if transport_is_manager %}<th>Charge</th><th>Collected</th>{% endif %}<th>Status</th><th>Action</th></tr></thead>
+<thead><tr><th>Reference</th><th>Departure</th><th>Customer</th><th>Route</th><th>Vehicle / driver</th>{% if transport_is_manager %}<th>Charge</th><th>Collected</th>{% endif %}<th>Status</th>{% if transport_is_manager %}<th>SMS</th>{% endif %}<th>Action</th></tr></thead>
 <tbody>{% for t in rows %}<tr>
 <td><a class="table-link" href="{% url 'transport:trip_detail' t.pk %}">{{ t.reference }}</a></td>
 <td>{{ t.scheduled_start|date:'d M Y H:i' }}</td>
@@ -13,8 +13,21 @@
 <td>{{ t.vehicle.registration }}<small class="cell-sub">{{ t.driver.full_name }}</small></td>
 {% if transport_is_manager %}<td>{{ t.agreed_fee|money }}</td><td>{{ t.collected|money }}</td>{% endif %}
 <td><span class="badge">{{ t.get_status_display }}</span></td>
+{% if transport_is_manager %}<td>
+  {% for job in t.sms_jobs %}
+    <small class="cell-sub">{{ job.get_event_key_display|default:job.event_key }}: {{ job.get_status_display }}</small>
+    {% if job.can_retry_from_page %}
+      <form method="post" action="{% url 'transport_sms:retry_transport_sms' job.pk %}" class="form-body">
+        {% csrf_token %}<input type="hidden" name="return_to" value="trips">
+        <input class="form-control" type="text" name="reason" placeholder="Retry reason" minlength="8" maxlength="240" required>
+        {% if job.status == 'unknown' %}<label class="toggle-row"><span>Checked Beem: not sent</span><input type="checkbox" name="beem_checked" required></label>{% endif %}
+        <button class="btn btn-secondary btn-sm" type="submit">Queue retry</button>
+      </form>
+    {% endif %}
+  {% empty %}<small class="cell-sub">No SMS queued</small>{% endfor %}
+</td>{% endif %}
 <td><a class="btn btn-secondary btn-sm" href="{% url 'transport:trip_detail' t.pk %}">{% if transport_is_manager and t.status == 'planned' or transport_is_manager and t.status == 'in_progress' %}Manage{% else %}View{% endif %}</a></td>
-</tr>{% empty %}<tr><td colspan="{% if transport_is_manager %}9{% else %}7{% endif %}" class="empty">No matching trips.</td></tr>{% endfor %}</tbody>
+</tr>{% empty %}<tr><td colspan="{% if transport_is_manager %}10{% else %}7{% endif %}" class="empty">No matching trips.</td></tr>{% endfor %}</tbody>
 </table></div></section>
 {% include 'kilasi_transport/_pagination.html' %}
 {% endblock %}

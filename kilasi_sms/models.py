@@ -66,6 +66,7 @@ class KilasiSmsAutomaticJob(models.Model):
         ('queued', 'Queued'), ('sending', 'Sending — review before retry'),
         ('accepted', 'Accepted by Beem'), ('blocked', 'Opted out / ineligible'),
         ('unknown', 'Failed or uncertain — no auto retry'), ('cancelled', 'Cancelled'),
+        ('rejected', 'Definitely rejected — review or retry'),
     ]
     rule = models.ForeignKey(KilasiSmsAutomationRule, on_delete=models.PROTECT, related_name='jobs')
     branch = models.ForeignKey('core.Branch', on_delete=models.PROTECT, null=True, blank=True)
@@ -81,12 +82,25 @@ class KilasiSmsAutomaticJob(models.Model):
     error_text = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     submitted_at = models.DateTimeField(null=True, blank=True)
+    attempt_count = models.PositiveSmallIntegerField(default=0)
 
     class Meta:
         ordering = ['-created_at']
         constraints = [models.UniqueConstraint(fields=['branch', 'event_key', 'source_id'], name='kilasi_sms_auto_event_once_5b'),
                        models.UniqueConstraint(fields=['event_key','source_id'], condition=models.Q(branch__isnull=True), name='ki_hama_job_once_v7')]
         indexes = [models.Index(fields=['branch', 'status', 'due_at'], name='kilasi_sms_due_5b')]
+
+
+class KilasiSmsRetryAudit(models.Model):
+    job = models.ForeignKey(KilasiSmsAutomaticJob, on_delete=models.PROTECT, related_name='retry_audits')
+    requested_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True)
+    previous_status = models.CharField(max_length=16)
+    reason = models.CharField(max_length=240)
+    previous_campaign_id = models.PositiveBigIntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
 
 
 class KilasiDeliveryConfirmation(models.Model):

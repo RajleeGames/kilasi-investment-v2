@@ -2,7 +2,7 @@
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
-from kilasi_sms.automation import scan_trip_reminders, can_send_automatically, deliver_job
+from kilasi_sms.automation import scan_trip_reminders, can_send_automatically, deliver_job, retry_confirmed_delivery_failures
 from kilasi_sms.models import KilasiSmsAutomaticJob
 
 
@@ -25,6 +25,7 @@ class Command(BaseCommand):
         if not can_send_automatically():
             raise CommandError('Automatic SMS is OFF. Requires KILASI_SMS_AUTOMATION_ENABLED=1, KILASI_SMS_LIVE_ENABLED=1 and complete Beem configuration.')
         scan_trip_reminders(now=now)
+        retry_confirmed_delivery_failures()
         ids=list(KilasiSmsAutomaticJob.objects.filter(status='queued',due_at__lte=timezone.now())
                  .order_by('due_at','pk').values_list('pk',flat=True)[:options['limit']])
         accepted=0

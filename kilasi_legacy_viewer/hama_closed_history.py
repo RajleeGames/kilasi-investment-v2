@@ -3,11 +3,11 @@ from contextlib import closing
 from decimal import Decimal
 from django.http import Http404
 from django.shortcuts import render
-from .views import admin_only, archival_conn
+from .views import hama_history_only, archival_conn
 
 STATUS_CHOICES = ('', 'completed', 'in_transit', 'pending', 'cancelled')
 
-@admin_only
+@hama_history_only
 def closed_trips(request):
     if request.method != 'GET':
         raise Http404('Read-only historical register')

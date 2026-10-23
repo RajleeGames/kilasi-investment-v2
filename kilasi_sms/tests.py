@@ -14,7 +14,7 @@ User=get_user_model()
 
 class SmsHubTests(TestCase):
     def setUp(self):
-        self.a=Branch.objects.create(name='Retail A')
+        self.a=Branch.objects.create(name='KILASI JUU')
         self.b=Branch.objects.create(name='Transport B')
         self.admin=User.objects.create_superuser('kilasi_owner','owner@example.com','pw_test')
         self.manager=User.objects.create_user('transport_mgr',password='pw_test')

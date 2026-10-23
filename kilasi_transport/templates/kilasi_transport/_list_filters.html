@@ -11,6 +11,14 @@
       {% endfor %}
     </select>
   </label>
+  {% if vehicle_choices %}<label>Vehicle
+    <select name="vehicle" class="form-control"><option value="">All vehicles</option>
+    {% for v in vehicle_choices %}<option value="{{ v.pk }}" {% if selected_vehicle == v.pk|stringformat:'s' %}selected{% endif %}>{{ v.registration }}</option>{% endfor %}
+    </select></label>{% endif %}
+  {% if driver_choices %}<label>Driver
+    <select name="driver" class="form-control"><option value="">All drivers</option>
+    {% for d in driver_choices %}<option value="{{ d.pk }}" {% if selected_driver == d.pk|stringformat:'s' %}selected{% endif %}>{{ d.full_name }}</option>{% endfor %}
+    </select></label>{% endif %}
   {% if category_choices %}<label>Category
     <select name="category" class="form-control"><option value="">All categories</option>
     {% for key, label in category_choices %}<option value="{{ key }}" {% if category == key %}selected{% endif %}>{{ label }}</option>{% endfor %}

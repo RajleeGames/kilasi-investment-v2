@@ -9,7 +9,7 @@ from django.db import transaction
 from django.utils import timezone
 from sms_center.models import SmsCampaign, SmsRecipient, SmsSenderProfile
 from sms_center.services import normalize_phone, provider_configured, _send_one_payload, sms_segments
-from .models import KilasiSmsAutomationRule, KilasiSmsAutomaticJob
+from .models import KilasiSmsAutomationRule, KilasiSmsAutomaticJob, KilasiSmsRetryAudit
 from .services import personalized, blocked_numbers
 
 
@@ -43,12 +43,19 @@ def _event_row(event_key, instance):
     if isinstance(instance, Trip) and event_key.startswith('transport.trip_'):
         required={'transport.trip_reminder': 'planned', 'transport.trip_underway':'in_progress',
                   'transport.trip_completed': 'completed'}
-        if instance.status != required.get(event_key):return None
-        return dict(branch=None, name=instance.customer_name,
-                    phone=instance.customer_phone, reference=instance.reference,
-                    pickup=instance.origin, destination=instance.destination,
+        if event_key in required and instance.status != required[event_key]:return None
+        if event_key not in required and event_key not in ('transport.trip_created', 'transport.trip_created_boss'):
+            return None
+        boss = event_key == 'transport.trip_created_boss'
+        return dict(branch=None,
+                    name=(getattr(settings,'TRANSPORT_BOSS_NAME','Boss') if boss else instance.customer_name),
+                    phone=(getattr(settings,'TRANSPORT_BOSS_PHONE','') if boss else instance.customer_phone),
+                    reference=instance.reference, pickup=instance.origin,
+                    destination=instance.destination,
                     date=timezone.localtime(instance.scheduled_start).strftime('%d %b %Y %H:%M'),
-                    amount=instance.agreed_fee, status=instance.status, user=instance.created_by)
+                    amount=instance.agreed_fee, status=instance.status,
+                    vehicle=instance.vehicle.registration, driver=instance.driver.full_name,
+                    customer=instance.customer_name, user=instance.created_by)
     return None
 
 
@@ -128,6 +135,8 @@ def _event_still_eligible(job):
         return Booking.objects.filter(pk=job.source_id,status='pending').exists()
     if k=='transport.booking_confirmed':
         return Booking.objects.filter(pk=job.source_id,status='confirmed').exists()
+    if k in ('transport.trip_created','transport.trip_created_boss'):
+        return Trip.objects.filter(pk=job.source_id).exclude(status='cancelled').exists()
     if k=='transport.trip_reminder':
         return Trip.objects.filter(pk=job.source_id,status='planned',
                                     scheduled_start__gt=timezone.now()+timedelta(hours=1)).exists()
@@ -138,8 +147,85 @@ def _event_still_eligible(job):
     return False
 
 
+def _was_delivered(job):
+    """The most recent campaign is definitive; historical attempts are preserved."""
+    if not job.campaign_id:
+        return False
+    return SmsRecipient.objects.filter(campaign_id=job.campaign_id,
+                                       status=SmsRecipient.Status.DELIVERED).exists()
+
+
+def can_manually_retry(job):
+    if not job.event_key.startswith('transport.') or job.branch_id is not None:
+        return False
+    if job.status not in ('unknown', 'rejected', 'accepted'):
+        return False
+    if job.status == 'accepted':
+        # Only when a signed delivery receipt has reported definitive failure.
+        if not job.campaign_id or not SmsRecipient.objects.filter(
+                campaign_id=job.campaign_id, status=SmsRecipient.Status.FAILED,
+                delivered_at__isnull=True).exclude(provider_status__in=['', 'unknown']).exists():
+            return False
+    return not _was_delivered(job) and job.attempt_count < 5
+
+
+def manual_retry_job(job_id, actor, reason, confirmed_unsubmitted=False):
+    """Manager-initiated, audited POST; never calls provider from HTTP request."""
+    from django.core.exceptions import ValidationError
+    reason = (reason or '').strip()
+    if len(reason) < 8:
+        raise ValidationError('Give a reason (at least 8 characters).')
+    if not can_send_automatically():
+        raise ValidationError('SMS sending is not enabled. Check configuration.')
+    with transaction.atomic():
+        job = KilasiSmsAutomaticJob.objects.select_for_update().select_related('rule').get(pk=job_id)
+        if not can_manually_retry(job):
+            raise ValidationError('Job cannot be retried; it may have been delivered or is still processing.')
+        if job.status == 'unknown' and not confirmed_unsubmitted:
+            raise ValidationError('Check Beem first and confirm no SMS was submitted before retrying.')
+        if not job.rule.enabled or not _event_still_eligible(job) or blocked_numbers([job.phone]):
+            raise ValidationError('The message is no longer eligible, the workflow is off, or the number opted out.')
+        KilasiSmsRetryAudit.objects.create(job=job, requested_by=actor,
+            previous_status=job.status, reason=reason[:240], previous_campaign_id=job.campaign_id)
+        job.status='queued'
+        job.due_at=timezone.now()
+        job.error_text='Manually requeued after manager review.'
+        job.save(update_fields=['status','due_at','error_text'])
+        return job
+
+
+def retry_confirmed_delivery_failures(limit=100):
+    """Only confirmed DLR failures (not missing DLR/timeout) and capped attempts."""
+    qs = (KilasiSmsAutomaticJob.objects.filter(status='accepted', branch__isnull=True,
+          event_key__startswith='transport.',attempt_count__lt=3,
+          campaign__recipients__status=SmsRecipient.Status.FAILED)
+          .exclude(campaign__recipients__provider_status__in=['', 'unknown', 'accepted'])
+          .order_by('pk').distinct()[:limit])
+    count=0
+    for pk in [j.pk for j in qs]:
+        with transaction.atomic():
+            job=KilasiSmsAutomaticJob.objects.select_for_update().select_related('rule').get(pk=pk)
+            if job.status!='accepted' or job.attempt_count>=3 or not job.rule.enabled:
+                continue
+            if not _event_still_eligible(job) or blocked_numbers([job.phone]):
+                continue
+            if not SmsRecipient.objects.filter(campaign_id=job.campaign_id,
+                   status=SmsRecipient.Status.FAILED).exclude(
+                   provider_status__in=['','unknown','accepted']).exists():
+                continue
+            KilasiSmsRetryAudit.objects.create(job=job, previous_status='accepted',
+                reason='Definitive failed delivery report; automatic retry',
+                previous_campaign_id=job.campaign_id)
+            job.status='queued'
+            job.due_at=timezone.now()+timedelta(minutes=2 ** job.attempt_count)
+            job.error_text='Automatic retry after definite delivery failure.'
+            job.save(update_fields=['status','due_at','error_text'])
+            count+=1
+    return count
+
+
 def deliver_job(job_id):
-    """Claim once in DB, then send exactly one Beem request; never auto-retry uncertain outcomes."""
+    """At-most-one Beem attempt per claim; retry ONLY definitive 429/DLR failures."""
     if not can_send_automatically():return False
     with transaction.atomic():
         job=(KilasiSmsAutomaticJob.objects.select_related('rule','branch','created_by')
@@ -147,10 +233,10 @@ def deliver_job(job_id):
         if job.status!='queued' or job.due_at>timezone.now():return False
         if job.event_key.startswith('transport.') and job.branch_id is not None:
             job.status='cancelled'
-            job.error_text='Legacy Retail-branch Transport SMS job paused: review standalone department rules.'
+            job.error_text='Legacy Retail-branch Transport job paused; review standalone rule.'
             job.save(update_fields=['status','error_text'])
             return False
-        if not job.rule.enabled or job.rule.event_key !=job.event_key:
+        if not job.rule.enabled or job.rule.event_key != job.event_key:
             job.status='cancelled';job.error_text='Automation rule disabled or changed.'
             job.save(update_fields=['status','error_text']);return False
         if not _event_still_eligible(job):
@@ -162,17 +248,18 @@ def deliver_job(job_id):
         if not SmsSenderProfile.objects.filter(sender_id=job.rule.sender_id,is_active=True).exists():
             job.status='cancelled';job.error_text='Approved SMS sender unavailable.'
             job.save(update_fields=['status','error_text']);return False
-        # mark BEFORE calling provider: crash or timeout => no automatic retry.
         claimed=KilasiSmsAutomaticJob.objects.filter(pk=job_id,status='queued').update(
-            status='sending',submitted_at=timezone.now())
+            status='sending',submitted_at=timezone.now(),attempt_count=job.attempt_count+1)
         if claimed!=1:return False
+        attempts=job.attempt_count+1
         message=SmsCampaign.objects.create(
-            title=f'KI AUTO {job.event_key} #{job.source_id}',sender_id=job.rule.sender_id,
-            message=job.body,recipient_count=1,segment_count=sms_segments(job.body),
-            estimated_units=sms_segments(job.body),status=SmsCampaign.Status.SENDING,
-            created_by=job.created_by,started_at=timezone.now())
-        recipient=SmsRecipient.objects.create(campaign=message,name=job.name,phone=job.phone,
-                                               personalized_message=job.body)
+            title=f'KI AUTO {job.event_key} #{job.source_id} attempt {attempts}',
+            sender_id=job.rule.sender_id,message=job.body,recipient_count=1,
+            segment_count=sms_segments(job.body),estimated_units=sms_segments(job.body),
+            status=SmsCampaign.Status.SENDING,created_by=job.created_by,
+            started_at=timezone.now())
+        recipient=SmsRecipient.objects.create(campaign=message,name=job.name,
+                                              phone=job.phone,personalized_message=job.body)
         job.campaign=message
         job.save(update_fields=['campaign'])
     accepted=False
@@ -180,24 +267,36 @@ def deliver_job(job_id):
     response={}
     try:
         accepted,code,response=_send_one_payload(message.sender_id,job.body,[recipient])
-        if isinstance(response,dict) and response.get('successful') is False:accepted=False
+        if isinstance(response,dict) and response.get('successful') is False:
+            accepted=False
     except Exception:
-        # Avoid persisting exception text containing URL secrets or personal data.
-        response={'error':'Provider/network exception; verify Beem before any manual retry.'}
+        # Exceptions including HTTP timeouts are UNCERTAIN; never auto retry.
+        response={'error':'Network/provider exception — verify provider before manual retry'}
         accepted=False
     now=timezone.now()
-    state='accepted' if accepted else 'unknown'
+    # HTTP 429 is a confirmed throttle / no acceptance: capped backoff.
+    retry_429=bool(not accepted and code==429 and attempts<3)
+    # 4xx provider refusals are definite but often permanent, manager review required.
+    refused=bool(not accepted and 400<=code<500 and code!=429)
+    state='accepted' if accepted else ('queued' if retry_429 else ('rejected' if refused else 'unknown'))
     recipient.status=SmsRecipient.Status.SENT if accepted else SmsRecipient.Status.FAILED
     recipient.sent_at=now if accepted else None
     recipient.provider_id=str(recipient.pk) if accepted else ''
-    recipient.provider_status='accepted' if accepted else 'unknown'
-    recipient.error_message='' if accepted else 'Unknown/provider failure; no automatic retry.'
+    recipient.provider_status='accepted' if accepted else ('rejected' if refused or retry_429 else 'unknown')
+    recipient.error_message='' if accepted else 'Provider did not accept; inspect status and retry policy.'
     recipient.save(update_fields=['status','sent_at','provider_id','provider_status','error_message','updated_at'])
     message.status=SmsCampaign.Status.SENT if accepted else SmsCampaign.Status.FAILED
     message.completed_at=now
-    message.provider_response={'http_status':code,'note':'Acceptance is not confirmed delivery.'}
+    message.provider_response={'http_status':code,'note':'Acceptance is not confirmed delivery; check DLR.'}
     message.save(update_fields=['status','completed_at','provider_response','updated_at'])
     job.status=state
-    job.error_text='' if accepted else 'Unknown outcome: inspect provider before any manual intervention.'
+    job.error_text=('' if accepted else 'Throttled; scheduled limited retry.' if retry_429
+                    else 'Provider definitely rejected; manager review.' if refused
+                    else 'Uncertain outcome; verify Beem before manual retry.')
     job.save(update_fields=['status','error_text'])
+    if retry_429:
+        KilasiSmsAutomaticJob.objects.filter(pk=job.pk,status='queued').update(
+            due_at=timezone.now()+timedelta(minutes=2 ** attempts))
+        KilasiSmsRetryAudit.objects.create(job=job,previous_status='sending',
+            reason='HTTP 429 definite throttle; automatic backoff',previous_campaign_id=message.pk)
     return accepted

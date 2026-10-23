@@ -5,7 +5,7 @@ from decimal import Decimal
 import re
 from django.http import Http404
 from django.shortcuts import render
-from .views import archival_conn, admin_only
+from .views import archival_conn, hama_history_only
 
 KINDS = {'trips', 'bookings', 'expenses'}
 PER_PAGE = 35
@@ -71,7 +71,7 @@ def _query(request, kind):
     return {'start':start,'end':end,'q':q,'status':status,'page':page}
 
 
-@admin_only
+@hama_history_only
 def history_records(request, kind):
     if request.method != 'GET' or kind not in KINDS:
         raise Http404('Archived HAMA history is read-only')

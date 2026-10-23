@@ -374,3 +374,16 @@ INSTALLED_APPS += ['kilasi_sms']
 # KILASI_V2_PHASE5B_AUTOMATION — explicitly OFF by default.
 # Separate from KILASI_SMS_LIVE_ENABLED. Never enable against customer data for testing.
 KILASI_SMS_AUTOMATION_ENABLED = env_bool('KILASI_SMS_AUTOMATION_ENABLED', default=False)
+
+
+# ============================================================
+# HAMA NA KILASI - BOSS SMS NOTIFICATIONS
+# ============================================================
+
+TRANSPORT_BOSS_PHONE = os.getenv(
+    "TRANSPORT_BOSS_PHONE", ""
+).strip()
+
+TRANSPORT_BOSS_NAME = os.getenv(
+    "TRANSPORT_BOSS_NAME", "Boss"
+).strip() or "Boss"

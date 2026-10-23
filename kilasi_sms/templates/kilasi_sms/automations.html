@@ -39,9 +39,15 @@
 {% endfor %}
 </div>
 <section class="card section-gap"><div class="card-head"><div><h2>Automation queue</h2><p>Last 35 scheduled attempts. Unknown status is NOT automatically retried.</p></div></div>
-  <div class="table-wrap"><table><thead><tr><th>Event</th><th>Customer</th><th>Due</th><th>Status</th><th>Provider</th></tr></thead><tbody>
-  {% for job in jobs %}<tr><td>{{ job.event_key }}</td><td>{{ job.name }}</td><td>{{ job.due_at|date:'d M Y H:i' }}</td><td><span class="badge">{{ job.get_status_display }}</span></td><td>{% if job.campaign %}<span>Campaign #{{ job.campaign.pk }}</span>{% else %}—{% endif %}</td></tr>
-  {% empty %}<tr><td colspan="5" class="empty">No automatic notifications have been queued for this branch yet.</td></tr>{% endfor %}
+  <div class="table-wrap"><table><thead><tr><th>Event</th><th>Customer</th><th>Due</th><th>Status</th><th>Provider</th>{% if department == 'transport' %}<th>Retry</th>{% endif %}</tr></thead><tbody>
+  {% for job in jobs %}<tr><td>{{ job.event_key }}</td><td>{{ job.name }}</td><td>{{ job.due_at|date:'d M Y H:i' }}</td><td><span class="badge">{{ job.get_status_display }}</span></td><td>{% if job.campaign %}<span>Campaign #{{ job.campaign.pk }}</span>{% else %}—{% endif %}</td>{% if department == 'transport' %}<td>
+    {% if job.can_retry_from_page %}
+    <form method="post" action="{% url 'transport_sms:retry_transport_sms' job.pk %}" class="form-body">
+      {% csrf_token %}<input name="reason" class="form-control" minlength="8" maxlength="240" required placeholder="Reason for retry">
+      {% if job.status == 'unknown' %}<label class="toggle-row"><span>Verified NOT submitted by Beem</span><input type="checkbox" name="beem_checked" required></label>{% endif %}
+      <button type="submit" class="btn btn-secondary btn-sm">Queue retry</button>
+    </form>{% else %}—{% endif %}</td>{% endif %}</tr>
+  {% empty %}<tr><td colspan="{% if department == 'transport' %}6{% else %}5{% endif %}" class="empty">No automatic notifications have been queued for this branch yet.</td></tr>{% endfor %}
   </tbody></table></div>
 </section>
 {% endblock %}

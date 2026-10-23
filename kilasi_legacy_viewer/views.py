@@ -54,6 +54,26 @@ def admin_only(view):
 
 
 
+# HAMA_HISTORY_SIDEBAR_V1 - Transport-only historical access. All Retail archives stay admin-only.
+def hama_history_only(view):
+    from functools import wraps
+    from kilasi_transport.permissions import retail_admin, transport_member
+
+    @login_required
+    @wraps(view)
+    def wrapped(request, *args, **kwargs):
+        if not request.user.is_active:
+            raise PermissionDenied("Inactive account.")
+        if retail_admin(request.user):
+            return view(request, *args, **kwargs)
+        member = transport_member(request)
+        if member and member.role == "manager":
+            return view(request, *args, **kwargs)
+        raise PermissionDenied("Only Transport Managers and company admins may view HAMA history.")
+
+    return wrapped
+
+
 # Labels and SQL are constants: no dynamic table names or arbitrary SQL from browser.
 SECTIONS = {
  'sales': {'name': 'Retail invoices', 'sql': '''

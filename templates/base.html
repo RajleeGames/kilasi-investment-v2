@@ -53,8 +53,8 @@
           </div>
           {% else %}
           <a href="{% url 'transport:home' %}" class="nav-item nav-direct {% if request.resolver_match.namespace == 'transport' and request.resolver_match.url_name == 'home' %}active{% endif %}"><span class="ico" data-icon="dashboard"></span><span class="nav-label">HAMA NA KILASI Dashboard</span></a>
-          <div class="nav-group {% if request.resolver_match.namespace == 'transport' %}open active-group{% endif %}" data-nav-group="hama-na-kilasi">
-            <button type="button" class="nav-group-toggle" title="HAMA NA KILASI" aria-expanded="{% if request.resolver_match.namespace == 'transport' %}true{% else %}false{% endif %}"><span class="ico" data-icon="products"></span><span class="nav-label">HAMA NA KILASI</span><span class="nav-group-chevron"></span></button>
+          <div class="nav-group {% if request.resolver_match.namespace == 'transport' or request.resolver_match.url_name == 'hama_history_filtered' or request.resolver_match.url_name == 'hama_closed_history' %}open active-group{% endif %}" data-nav-group="hama-na-kilasi">
+            <button type="button" class="nav-group-toggle" title="HAMA NA KILASI" aria-expanded="{% if request.resolver_match.namespace == 'transport' or request.resolver_match.url_name == 'hama_history_filtered' or request.resolver_match.url_name == 'hama_closed_history' %}true{% else %}false{% endif %}"><span class="ico" data-icon="products"></span><span class="nav-label">HAMA NA KILASI</span><span class="nav-group-chevron"></span></button>
             <div class="nav-submenu"><div class="nav-submenu-inner">
               <a class="nav-subitem" href="{% url 'transport:vehicles' %}"><span class="nav-child-dot"></span>Vehicles</a>
               <a class="nav-subitem" href="{% url 'transport:drivers' %}"><span class="nav-child-dot"></span>Drivers</a>
@@ -63,6 +63,10 @@
               {% if transport_is_manager %}
               <a class="nav-subitem" href="{% url 'transport:expenses' %}"><span class="nav-child-dot"></span>Transport expenses</a>
               <a class="nav-subitem" href="{% url 'transport:reports' %}"><span class="nav-child-dot"></span>Transport reports</a>
+              <a class="nav-subitem" href="/transport/history/trips/"><span class="nav-child-dot"></span>Historical trips</a>
+              <a class="nav-subitem" href="/transport/history/bookings/"><span class="nav-child-dot"></span>Historical bookings</a>
+              <a class="nav-subitem" href="/transport/history/expenses/"><span class="nav-child-dot"></span>Historical expenses</a>
+              <a class="nav-subitem" href="/transport/closed-history/"><span class="nav-child-dot"></span>Closed trip register</a>
               {% endif %}
             </div></div>
           </div>
@@ -71,6 +75,7 @@
             <button class="nav-group-toggle" type="button" aria-expanded="{% if request.resolver_match.namespace == 'transport_sms' %}true{% else %}false{% endif %}"><span class="ico" data-icon="reports"></span><span class="nav-label">SMS Center</span><span class="nav-group-chevron"></span></button>
             <div class="nav-submenu"><div class="nav-submenu-inner">
               <a class="nav-subitem" href="{% url 'transport_sms:hub' %}"><span class="nav-child-dot"></span>HAMA NA KILASI customers</a>
+              <a class="nav-subitem" href="{% url 'transport_sms:hub' %}?source=legacy_all"><span class="nav-child-dot"></span>Historical customer numbers</a>
               <a class="nav-subitem" href="{% url 'transport_sms:automations' %}"><span class="nav-child-dot"></span>Automatic SMS</a>
               <a class="nav-subitem" href="{% url 'transport_sms:history' %}"><span class="nav-child-dot"></span>SMS history</a>
             </div></div>
@@ -129,8 +134,8 @@
             </div></div>
           </div>
           {% if request.user.is_superuser or request.user.profile.role == 'admin' %}
-          <div class="nav-group {% if request.resolver_match.namespace == 'transport' %}open active-group{% endif %}" data-nav-group="hama-na-kilasi">
-            <button class="nav-group-toggle" type="button" title="HAMA NA KILASI" aria-expanded="{% if request.resolver_match.namespace == 'transport' %}true{% else %}false{% endif %}"><span class="ico" data-icon="reports"></span><span class="nav-label">HAMA NA KILASI</span><span class="nav-group-chevron"></span></button>
+          <div class="nav-group {% if request.resolver_match.namespace == 'transport' or request.resolver_match.url_name == 'hama_history_filtered' or request.resolver_match.url_name == 'hama_closed_history' %}open active-group{% endif %}" data-nav-group="hama-na-kilasi">
+            <button class="nav-group-toggle" type="button" title="HAMA NA KILASI" aria-expanded="{% if request.resolver_match.namespace == 'transport' or request.resolver_match.url_name == 'hama_history_filtered' or request.resolver_match.url_name == 'hama_closed_history' %}true{% else %}false{% endif %}"><span class="ico" data-icon="reports"></span><span class="nav-label">HAMA NA KILASI</span><span class="nav-group-chevron"></span></button>
             <div class="nav-submenu"><div class="nav-submenu-inner">
               <a class="nav-subitem" href="{% url 'transport:home' %}"><span class="nav-child-dot"></span>Transport Dashboard</a>
               <a class="nav-subitem" href="{% url 'transport:vehicles' %}"><span class="nav-child-dot"></span>Vehicles</a>
@@ -139,8 +144,10 @@
               <a class="nav-subitem" href="{% url 'transport:bookings' %}"><span class="nav-child-dot"></span>Bookings</a>
               <a class="nav-subitem" href="{% url 'transport:expenses' %}"><span class="nav-child-dot"></span>Transport Expenses</a>
               <a class="nav-subitem" href="{% url 'transport:reports' %}"><span class="nav-child-dot"></span>Transport Reports</a>
-              <a class="nav-subitem" href="/transport/closed-history/"><span class="nav-child-dot"></span>Closed Trip History</a>
-              <a class="nav-subitem" href="/transport/history/bookings/"><span class="nav-child-dot"></span>Historical Bookings</a>
+              <a class="nav-subitem" href="/transport/history/trips/"><span class="nav-child-dot"></span>Historical trips</a>
+              <a class="nav-subitem" href="/transport/history/bookings/"><span class="nav-child-dot"></span>Historical bookings</a>
+              <a class="nav-subitem" href="/transport/history/expenses/"><span class="nav-child-dot"></span>Historical expenses</a>
+              <a class="nav-subitem" href="/transport/closed-history/"><span class="nav-child-dot"></span>Closed trip register</a>
               <a class="nav-subitem" href="{% url 'transport:users' %}"><span class="nav-child-dot"></span>Transport Users</a>
             </div></div>
           </div>
@@ -150,6 +157,7 @@
               <a class="nav-subitem" href="{% url 'sms_center:dashboard' %}"><span class="nav-child-dot"></span>SMS Overview</a>
               <a class="nav-subitem" href="{% url 'retail_sms:hub' %}"><span class="nav-child-dot"></span>Retail SMS Customers</a>
               <a class="nav-subitem" href="{% url 'transport_sms:hub' %}"><span class="nav-child-dot"></span>HAMA NA KILASI SMS</a>
+              <a class="nav-subitem" href="{% url 'transport_sms:hub' %}?source=legacy_all"><span class="nav-child-dot"></span>Historical customer numbers</a>
               <a class="nav-subitem" href="{% url 'sms_center:send' %}"><span class="nav-child-dot"></span>Send SMS</a>
               <a class="nav-subitem" href="{% url 'sms_center:contacts' %}"><span class="nav-child-dot"></span>Contacts</a>
               <a class="nav-subitem" href="{% url 'sms_center:templates' %}"><span class="nav-child-dot"></span>Templates</a>

@@ -4,7 +4,8 @@ Do not import the original Kilasi SQLite tables until their own modules have
 been migrated. A one-time generated sales/transport cohort is *not* a customer
 consent record; send approval is performed separately.
 """
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from django.db import connection
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from sms_center.services import normalize_phone
@@ -18,7 +19,9 @@ SOURCE_LABELS = {
     'retail': [('all','All available records'), ('sales','Normal sales'),
                ('proformas','Issued proformas'), ('deliveries','Delivery notes'), ('genji','Genji customers'), ('topups','Top-Up customers'), ('used_sales','Used-item customers'), ('orders','Customer orders')],
     'transport': [('all','All available records'), ('bookings','Transport bookings'),
-                  ('trips','Transport trips')],
+                   ('trips','Transport trips'), ('legacy_trips','Archived trips (all dates)'),
+                   ('legacy_bookings','Archived bookings (all dates)'),
+                   ('legacy_all','All archived transport contacts')],
 }
 
 
@@ -30,9 +33,10 @@ def parse_filters(params, department):
             return date.fromisoformat(val) if val else default
         except ValueError:
             raise ValidationError('Enter valid YYYY-MM-DD dates.')
-    start = one('start', today - timedelta(days=30))
-    end = one('end', today)
-    if start > end or (end - start).days > 366 or end > today:
+    historical=(params.get('source') or '') in ('legacy_all','legacy_trips','legacy_bookings')
+    start = date(2000,1,1) if historical else one('start', today - timedelta(days=30))
+    end = today if historical else one('end', today)
+    if start > end or ((end - start).days > 366 and not historical) or end > today:
         raise ValidationError('Select up to 366 days ending today or earlier.')
     source = (params.get('source') or 'all').strip()
     if source not in dict(SOURCE_LABELS[department]):
@@ -62,6 +66,37 @@ def _row(key, kind, branch, name, raw_phone, when, reference, **extra):
         'status': str(extra.get('status') or ''),
         'branch': str(branch.name) if branch else 'HAMA NA KILASI',
     }
+
+
+def _archived_transport_rows(source, start, end):
+    """Select historical HAMA contact data from sealed archive tables, NEVER write to them.
+
+    Only used by a manager's filtered SMS audience, not by automatic notifications.
+    """
+    found=[]
+    sources=(('legacy_trips','kilasi_legacy_transport_trip','trip_date'),
+             ('legacy_bookings','kilasi_legacy_transport_booking','booking_datetime'))
+    with connection.cursor() as cursor:
+        tables=set(connection.introspection.table_names(cursor))
+        for kind,table,date_field in sources:
+            if source not in ('legacy_all',kind) or table not in tables:
+                continue
+            columns={col.name for col in connection.introspection.get_table_description(cursor,table)}
+            if not {'id','customer_name','customer_phone',date_field}.issubset(columns):
+                continue
+            # All table and field identifiers are hard-coded, never request-controlled.
+            cursor.execute(f'SELECT id, customer_name, customer_phone, {date_field} '
+                           f'FROM {table} ORDER BY id DESC LIMIT 20000')
+            for pk,name,phone,rawdate in cursor.fetchall():
+                try:
+                    dt=rawdate if isinstance(rawdate,(date,datetime)) else datetime.fromisoformat(str(rawdate).replace('Z','+00:00'))
+                    when=dt.date() if isinstance(dt,datetime) else dt
+                    if when is None or not (start <= when <= end):continue
+                except (ValueError,TypeError):
+                    continue
+                row=_row(pk,kind,None,name,phone,when,f'OLD-{pk}',status='historical')
+                if row:found.append(row)
+    return found
 
 
 def audience_rows(department, branch, filters):
@@ -136,7 +171,9 @@ def audience_rows(department, branch, filters):
                          obj.scheduled_start, obj.reference, pickup=obj.origin,
                          destination=obj.destination, amount=obj.agreed_fee, status=obj.status)
                 if r: rows.append(r)
-    if filters.get('status'):
+    if department == 'transport' and source in ('legacy_trips','legacy_bookings','legacy_all'):
+        rows.extend(_archived_transport_rows(source,start,end))
+    if filters.get('status') and source not in ('legacy_trips','legacy_bookings','legacy_all'):
         rows=[r for r in rows if r['status']==filters['status']]
     term = filters['q'].casefold()
     if term:

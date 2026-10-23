@@ -58,7 +58,9 @@ KILASI_SMS_AUTOMATION_ENABLED = env_bool(
 BEEM_API_KEY = os.getenv("BEEM_API_KEY", "").strip()
 BEEM_SECRET_KEY = os.getenv("BEEM_SECRET_KEY", "").strip()
 BEEM_SENDER_ID = os.getenv("BEEM_SENDER_ID", "KILASI LTD").strip()
-BEEM_DLR_TOKEN=''
+BEEM_DLR_TOKEN = _os.getenv('BEEM_DLR_TOKEN', '').strip()
+TRANSPORT_BOSS_PHONE = _os.getenv('TRANSPORT_BOSS_PHONE', '').strip()
+TRANSPORT_BOSS_NAME = _os.getenv('TRANSPORT_BOSS_NAME', 'Boss').strip() or 'Boss'
 BEEM_SEND_URL = _os.getenv(
     "BEEM_SEND_URL",
     "https://apisms.beem.africa/v1/send",

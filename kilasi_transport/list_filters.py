@@ -18,7 +18,7 @@ def _parse_date(value):
 
 
 def filtered_page(request, queryset, *, date_field, search_fields=(), statuses=(),
-                  state_field='status', category_choices=(), page_size=25):
+                  state_field='status', category_choices=(), page_size=25, vehicle_field=None, driver_field=None):
     q = (request.GET.get('q') or '').strip()[:100]
     selected = (request.GET.get('status') or '').strip()
     date_from, from_error = _parse_date(request.GET.get('start'))
@@ -55,6 +55,16 @@ def filtered_page(request, queryset, *, date_field, search_fields=(), statuses=(
         if date_to:
             queryset = queryset.filter(**{date_field + '__lte': date_to})
 
+    vehicle_id=(request.GET.get('vehicle') or '').strip()
+    driver_id=(request.GET.get('driver') or '').strip()
+    # IDs are validated against the DB; invalid values never influence SQL fields.
+    if vehicle_field and vehicle_id.isdecimal() and len(vehicle_id)<12:
+        queryset=queryset.filter(**{vehicle_field:int(vehicle_id)})
+    else: vehicle_id=''
+    if driver_field and driver_id.isdecimal() and len(driver_id)<12:
+        queryset=queryset.filter(**{driver_field:int(driver_id)})
+    else: driver_id=''
+
     pager = Paginator(queryset, page_size)
     page_obj = pager.get_page(request.GET.get('page'))
     params = request.GET.copy()
@@ -73,4 +83,5 @@ def filtered_page(request, queryset, *, date_field, search_fields=(), statuses=(
         'status_choices': statuses,
         'category': category,
         'category_choices': category_choices,
+        'selected_vehicle': vehicle_id, 'selected_driver': driver_id,
     }

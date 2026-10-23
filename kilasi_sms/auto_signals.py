@@ -43,6 +43,9 @@ def prior_trip(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Trip, dispatch_uid='kilasi5b_trip_after')
 def after_trip(sender, instance, created, **kwargs):
+    if created:
+        later('transport.trip_created',Trip,instance.pk)
+        later('transport.trip_created_boss',Trip,instance.pk)
     if instance.status=='in_progress' and (created or instance._sms_previous_status!='in_progress'):
         later('transport.trip_underway',Trip,instance.pk)
     if instance.status=='completed' and (created or instance._sms_previous_status!='completed'):
