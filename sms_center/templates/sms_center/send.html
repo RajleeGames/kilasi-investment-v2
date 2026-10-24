@@ -4,7 +4,7 @@
 {% block content %}
 <div class="page-head sms-page-head">
   <div><h1>Send customer message</h1><p>Select POS customers, saved contacts or manual phone numbers. Personalize using customer names.</p></div>
-  <div class="head-actions"><a class="btn btn-secondary" href="{% url 'sms_center:import_contacts' %}">Import CSV</a><a class="btn btn-secondary" href="{% url 'sms_center:history' %}">History</a></div>
+  <div class="head-actions"><a class="btn btn-primary" href="{% url 'sms_center:batches' %}">Send next 500 · batches</a><a class="btn btn-secondary" href="{% url 'sms_center:import_contacts' %}">Import CSV</a><a class="btn btn-secondary" href="{% url 'sms_center:history' %}">History</a></div>
 </div>
 {% include "sms_center/_nav.html" %}
 

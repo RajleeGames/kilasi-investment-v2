@@ -3,6 +3,37 @@
   const qa = (selector, root = document) => [...root.querySelectorAll(selector)];
 
   const composer = q('[data-sms-compose]');
+  /* SMS batch composer shares the existing SMS Center JS + CSS. */
+  const batchComposer = q('[data-sms-batch-compose]');
+  if (batchComposer) {
+    const body = q('[data-sms-batch-message]', batchComposer);
+    const template = q('[data-sms-batch-template]', batchComposer);
+    const preview = q('[data-sms-batch-preview]', batchComposer);
+    const chars = q('[data-sms-batch-chars]', batchComposer);
+    const refresh = () => {
+      const text = body?.value || '';
+      if (chars) chars.textContent = String(text.length);
+      if (preview) preview.textContent = text.replaceAll('{name}', 'Customer')
+        .replaceAll('{first_name}', 'Customer').replaceAll('{phone}', '255712345678')
+        || 'Start typing to preview your message.';
+    };
+    template?.addEventListener('change', () => {
+      const selected = template.options[template.selectedIndex];
+      if (body && selected?.dataset.body) body.value = selected.dataset.body;
+      refresh();
+    });
+    body?.addEventListener('input', refresh);
+    batchComposer.addEventListener('submit', e => {
+      if (!body?.value.trim() || !q('[name="confirm_batch"]', batchComposer)?.checked) {
+        e.preventDefault();
+        alert('Write a message and confirm permission before queuing this batch.');
+        return;
+      }
+      q('[data-sms-batch-submit]', batchComposer)?.setAttribute('disabled', 'disabled');
+    });
+    refresh();
+  }
+
   if (!composer) return;
 
   const tabs = qa('[data-sms-source]', composer);

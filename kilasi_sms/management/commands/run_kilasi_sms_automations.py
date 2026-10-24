@@ -4,6 +4,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 from kilasi_sms.automation import scan_trip_reminders, can_send_automatically, deliver_job, retry_confirmed_delivery_failures
 from kilasi_sms.models import KilasiSmsAutomaticJob
+from sms_center.batch_service import process_batch_outbox
 
 
 class Command(BaseCommand):
@@ -36,3 +37,7 @@ class Command(BaseCommand):
                 # Status 'sending' may mean Beem accepted already: never auto retry.
                 self.stderr.write(f'Job {pk}: check provider status; no retry. Error type {type(exc).__name__}.')
         self.stdout.write(f'Processed {len(ids)} due jobs. Beem accepted: {accepted}. Verify delivery receipts separately.')
+        # Independently queued, permission-reviewed 500-contact campaign batches.
+        # Process at most 20 per timer tick, never retry uncertain submissions.
+        result = process_batch_outbox(limit=20)
+        self.stdout.write(f"Manual batch SMS: attempted {result['checked']}, accepted {result['accepted']}, blocked {result['blocked']}, review {result['uncertain']}.")

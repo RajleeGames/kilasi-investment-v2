@@ -1,12 +1,16 @@
 from django.urls import path
 
-from . import views
+from . import views, batch_views
 
 app_name = "sms_center"
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
     path("send/", views.send_sms, name="send"),
+    path("batches/", batch_views.batch_list, name="batches"),
+    path("batches/<int:pk>/", batch_views.batch_detail, name="batch_detail"),
+    path("batches/<int:pk>/queue/", batch_views.queue_batch, name="batch_queue"),
+    path("batches/<int:pk>/review/", batch_views.batch_review, name="batch_review"),
     path("balance/", views.balance_json, name="balance"),
 
     path("contacts/", views.contacts, name="contacts"),

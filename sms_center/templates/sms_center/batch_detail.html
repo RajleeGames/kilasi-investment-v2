@@ -1,0 +1,49 @@
+{% extends "sms_center/shell.html" %}
+{% block title %}{{ series.title }} · SMS batches{% endblock %}
+{% block page_title %}SMS batch progress{% endblock %}
+{% block content %}
+<div class="page-head sms-page-head"><div><h1>{{ series.title }}</h1><p>{{ series.group_name|default:'All saved contacts' }} · Each normalized phone is assigned only once in this series.</p></div><a class="btn btn-secondary" href="{% url 'sms_center:batches' %}">All batches</a></div>
+{% include "sms_center/_nav.html" %}
+<div class="sms-campaign-kpis">
+  <article class="card"><span>Audience</span><strong>{{ total }}</strong></article>
+  <article class="card"><span>Not yet selected</span><strong>{{ pending }}</strong></article>
+  <article class="card"><span>Queued / processing</span><strong>{{ inflight }}</strong></article>
+  <article class="card"><span>Accepted by Beem</span><strong>{{ states.accepted|default:0 }}</strong></article>
+  <article class="card"><span>Review / blocked</span><strong>{{ states.review|default:0 }} / {{ states.blocked|default:0 }}</strong></article>
+</div>
+{% if inflight %}<div class="alert">Previous batch is still queued or processing, or an interrupted provider request requires review. Do not queue another batch until its status is reconciled.</div>{% endif %}
+{% if states.sending %}
+<section class="card section-gap"><div class="form-body"><h3>Interrupted provider submission?</h3><p>Some numbers are marked as sending. If a worker stopped unexpectedly, check Beem records first. Attempts younger than five minutes cannot be marked for review. No number will be resent by this action.</p>
+<form method="post" action="{% url 'sms_center:batch_review' series.pk %}" class="form-body">{% csrf_token %}
+<label>Beem review notes<input class="form-control" name="reason" maxlength="200" minlength="12" required placeholder="I compared the Beem provider logs at ..."></label>
+<label class="toggle-row"><span>I checked Beem and understand these numbers will not be retried automatically.</span><input type="checkbox" name="beem_checked" required></label>
+<button class="btn btn-secondary" type="submit">Mark stalled attempts for review</button></form></div></section>
+{% endif %}
+{% if can_queue %}
+<form method="post" action="{% url 'sms_center:batch_queue' series.pk %}" class="sms-compose" data-sms-batch-compose>{% csrf_token %}
+  <div class="sms-compose-main">
+    <section class="card sms-compose-panel"><div class="card-head"><div><h2>Next {{ batch_size }} unique contacts</h2><p>Selected automatically from the remaining contacts. You can write a different message or choose a template for each batch. Nothing is sent until you approve.</p></div></div>
+      <p class="field-note">Preview of the next contacts (up to 12):</p>
+      <div class="table-wrap"><table><thead><tr><th>Name</th><th>Phone</th></tr></thead><tbody>{% for person in preview %}<tr><td>{{ person.name }}</td><td>{{ person.phone }}</td></tr>{% endfor %}</tbody></table></div>
+    </section>
+    <section class="card sms-compose-panel"><div class="card-head"><div><h2>Message for this batch</h2><p>Only the next {{ batch_size }} (or fewer) contacts will be queued. Personalize using the selected name or phone.</p></div></div>
+      <div class="form-body">
+        <label>Approved Sender ID<select class="form-control" name="sender_id" required><option value="">Choose sender</option>{% for sender in senders %}<option value="{{ sender.sender_id }}" {% if sender.is_default %}selected{% endif %}>{{ sender.sender_id }}</option>{% endfor %}</select></label>
+        <label>Template<select class="form-control" data-sms-batch-template><option value="">Write a new message</option>{% for t in templates %}<option value="{{ t.id }}" data-body="{{ t.body|escape }}">{{ t.name }}</option>{% endfor %}</select></label>
+        <label>SMS body<textarea class="form-control" name="message" rows="6" maxlength="1000" required data-sms-batch-message placeholder="Habari {first_name}, ..."></textarea></label>
+        <p class="cell-sub">Allowed personalization: {name}, {first_name}, {phone}.</p>
+        <div class="sms-preview-box"><span>Preview</span><p data-sms-batch-preview>Start typing to preview your message.</p></div>
+        <label class="toggle-row"><span><strong>Approve this batch for sending</strong><small>Recipients can opt out. Sent or uncertain numbers cannot be retried automatically. Each queued message is processed once by the existing SMS timer.</small></span><input type="checkbox" name="confirm_batch" required></label>
+      </div>
+    </section>
+  </div>
+  <aside class="card sms-send-summary">
+    <span class="sms-eyebrow">NEXT BATCH</span><h2>Review before queuing</h2>
+    <div class="sms-summary-list"><div><span>Remaining</span><strong>{{ pending }}</strong></div><div><span>Batch size</span><strong>Up to {{ batch_size }}</strong></div><div><span>Beem balance</span><strong>{{ balance.display }}</strong></div><div><span>SMS characters</span><strong data-sms-batch-chars>0</strong></div></div>
+    {% if provider_ready %}<button class="btn btn-primary btn-block" type="submit" data-sms-batch-submit>Queue next batch</button>{% else %}<p class="alert">Beem not configured. No batches can be queued.</p>{% endif %}
+    <small>No SMS sent from the browser request. The system worker sends in small safe groups.</small>
+  </aside>
+</form>
+{% elif not pending %}<section class="card section-gap"><div class="form-body"><h2>Series complete</h2><p>No unselected numbers remain. Review any failed, uncertain or blocked contacts in each campaign's audit history before considering further action.</p></div></section>{% endif %}
+<section class="card section-gap"><div class="card-head"><h2>Queued and previous batches</h2></div><div class="table-wrap"><table><thead><tr><th>Batch</th><th>Campaign</th><th>Recipients</th><th>Status</th><th>Open</th></tr></thead><tbody>{% for b in batches %}<tr><td>{{ b.batch_number }}</td><td>{{ b.campaign__title }}</td><td>{{ b.size }}</td><td>{{ b.campaign__status }}</td><td><a class="btn btn-secondary btn-sm" href="{% url 'sms_center:campaign_detail' b.campaign_id %}">Details</a></td></tr>{% empty %}<tr><td colspan="5" class="empty">No batch has been queued yet.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

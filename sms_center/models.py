@@ -208,3 +208,48 @@ class SmsImportBatch(TimeStampedModel):
 
     def __str__(self):
         return self.filename
+
+
+# KILASI_SMS_BATCH_SERIES_V1: durable saved-contact batches (no historical table writes).
+class SmsBatchSeries(TimeStampedModel):
+    """One snapshotted consent-reviewed audience; split into non-repeating sends."""
+    title = models.CharField(max_length=160)
+    group_name = models.CharField(max_length=100, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name='sms_batch_series_created',
+    )
+
+    class Meta:
+        ordering = ['-created_at', '-pk']
+
+    def __str__(self):
+        return self.title
+
+
+class SmsBatchEntry(TimeStampedModel):
+    STATES = [
+        ('pending', 'Not selected'), ('queued', 'Queued'),
+        ('sending', 'Provider review if interrupted'),
+        ('accepted', 'Accepted by Beem'), ('review', 'Not accepted or uncertain'),
+        ('blocked', 'Opted out or invalid'),
+    ]
+    series = models.ForeignKey(SmsBatchSeries, on_delete=models.CASCADE, related_name='entries')
+    contact = models.ForeignKey(SmsContact, on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='sms_batch_entries')
+    phone = models.CharField(max_length=20)
+    name = models.CharField(max_length=160, blank=True)
+    status = models.CharField(max_length=12, choices=STATES, default='pending', db_index=True)
+    batch_number = models.PositiveIntegerField(null=True, blank=True)
+    campaign = models.ForeignKey(SmsCampaign, on_delete=models.PROTECT, null=True, blank=True,
+                                 related_name='batch_entries')
+    recipient = models.OneToOneField(SmsRecipient, on_delete=models.PROTECT, null=True, blank=True,
+                                     related_name='batch_entry')
+
+    class Meta:
+        ordering = ['pk']
+        constraints = [models.UniqueConstraint(fields=['series', 'phone'],
+                                               name='sms_batch_unique_phone')]
+
+    def __str__(self):
+        return f'{self.series_id}: {self.phone} ({self.status})'

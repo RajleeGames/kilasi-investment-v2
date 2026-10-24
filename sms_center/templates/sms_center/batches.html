@@ -1,0 +1,24 @@
+{% extends "sms_center/shell.html" %}
+{% block title %}SMS Batches{% endblock %}
+{% block page_title %}SMS Batches{% endblock %}
+{% block content %}
+<div class="page-head sms-page-head"><div><h1>Bulk SMS · batches of {{ batch_size }}</h1><p>Capture one approved audience, then send the next uncontacted group. No repeat numbers within the same series.</p></div><a class="btn btn-secondary" href="{% url 'sms_center:send' %}">Standard SMS</a></div>
+{% include "sms_center/_nav.html" %}
+<section class="card sms-compose-panel">
+  <div class="card-head"><div><h2>Start a new batch series</h2><p>Choose your saved SMS contacts. Each phone appears once, even if it was entered under multiple names. You can run 10,000 contacts as 20 separate batches.</p></div></div>
+  <form method="post" class="form-body">{% csrf_token %}
+    <div class="form-grid two">
+      <label>Series title<input class="form-control" name="title" maxlength="160" required placeholder="e.g. HAMA October 2026 service updates"></label>
+      <label>Contact group<select class="form-control" name="group_name"><option value="">All saved, SMS-allowed contacts</option>{% for group in groups %}<option value="{{ group }}">{{ group }}</option>{% endfor %}</select></label>
+    </div>
+    <label class="toggle-row"><span><strong>I have checked these contacts may receive this message</strong><small>SMS permission must be current. Old transactions and imported phone lists alone are not marketing consent. Opt-outs are always respected.</small></span><input type="checkbox" name="permission_reviewed" required></label>
+    <div class="form-actions"><button type="submit" class="btn btn-primary">Prepare contact list · no SMS sent</button></div>
+  </form>
+</section>
+<section class="card section-gap"><div class="card-head"><div><h2>Existing batch series</h2><p>Continue where you stopped, without choosing the same recipient twice.</p></div></div>
+ <div class="table-wrap"><table><thead><tr><th>Series</th><th>Group</th><th>Contacts</th><th>Remaining</th><th>Created</th><th></th></tr></thead><tbody>
+ {% for s in series_list %}<tr><td><strong>{{ s.title }}</strong></td><td>{{ s.group_name|default:'All approved contacts' }}</td><td>{{ s.audience_count }}</td><td>{{ s.remaining }}</td><td>{{ s.created_at|date:'d M Y H:i' }}</td><td><a class="btn btn-secondary btn-sm" href="{% url 'sms_center:batch_detail' s.pk %}">Open</a></td></tr>
+ {% empty %}<tr><td colspan="6" class="empty">No SMS batch series prepared yet.</td></tr>{% endfor %}
+ </tbody></table></div>
+</section>
+{% endblock %}
