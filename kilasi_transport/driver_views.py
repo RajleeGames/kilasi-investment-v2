@@ -172,6 +172,10 @@ def trip_status(request, pk):
                 trip.save(update_fields=['status', 'cancel_reason', 'cancelled_at', 'cancelled_by'])
                 messages.success(request, 'Trip cancelled. The original record and audit trail were preserved.')
         elif action == 'in_progress':
+            if Trip.objects.filter(status='in_progress').exclude(pk=trip.pk).filter(
+                    Q(vehicle_id=trip.vehicle_id) | Q(driver_id=trip.driver_id)).exists():
+                messages.error(request, 'Vehicle or driver already has an active trip. Complete it before starting another.')
+                return redirect('transport:driver_trip_detail', pk=pk)
             trip.status = action
             trip.save(update_fields=['status'])
             messages.success(request, 'Trip started. SMS is queued if the approved automation rule is enabled.')

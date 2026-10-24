@@ -15,7 +15,7 @@ from .models import KilasiSmsDispatch
 
 MAX_SMS_PER_DRAFT = 50
 ALLOWED_FIELDS = {'name','first_name','phone','reference','pickup','destination',
-                  'date','amount','status','branch','vehicle','driver','customer'}
+                  'date','amount','status','branch','vehicle','driver','customer','customer_phone'}
 VARIABLE_PATTERN = re.compile(r'\{\{\s*([a-z_]+)\s*\}\}|\{([a-z_]+)\}|\[([a-z_]+)\]', re.I)
 
 

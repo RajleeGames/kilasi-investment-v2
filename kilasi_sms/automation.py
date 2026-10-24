@@ -38,7 +38,7 @@ def _event_row(event_key, instance):
         return dict(branch=None, name=instance.customer_name,
                     phone=instance.customer_phone, reference=instance.reference,
                     pickup=instance.origin, destination=instance.destination,
-                    date=instance.requested_date, amount=instance.quoted_amount,
+                    date=instance.schedule_label, amount=instance.quoted_amount,
                     status=instance.status, user=instance.created_by)
     if isinstance(instance, Trip) and event_key.startswith('transport.trip_'):
         required={'transport.trip_reminder': 'planned', 'transport.trip_underway':'in_progress',
@@ -55,7 +55,7 @@ def _event_row(event_key, instance):
                     date=timezone.localtime(instance.scheduled_start).strftime('%d %b %Y %H:%M'),
                     amount=instance.agreed_fee, status=instance.status,
                     vehicle=instance.vehicle.registration, driver=instance.driver.full_name,
-                    customer=instance.customer_name, user=instance.created_by)
+                    customer=instance.customer_name, customer_phone=instance.customer_phone, user=instance.created_by)
     return None
 
 

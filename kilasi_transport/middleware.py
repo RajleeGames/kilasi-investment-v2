@@ -1,5 +1,6 @@
 """Prevent transport-only accounts from using retail, SMS, billing, and Django admin endpoints."""
 from django.http import HttpResponseForbidden
+from django.shortcuts import redirect
 from .models import TransportAccess
 from .permissions import retail_admin
 
@@ -26,6 +27,8 @@ class TransportRouteFirewall:
                         (path.startswith('/static/') or path.startswith('/media/branding/'))
                     )
                     if not driver_path and not shared_path:
+                        if request.method in ('GET', 'HEAD') and path in ('/', '/transport/', '/dashboard/'):
+                            return redirect('transport:driver_home')
                         return HttpResponseForbidden('Drivers can only open their own Transport workspace.')
                     if driver_path and (not access.is_active or not access.driver_id or
                             access.driver.status != 'active'):

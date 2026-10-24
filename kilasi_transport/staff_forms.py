@@ -8,10 +8,15 @@ class StaffBookingForm(StyledForm):
     class Meta:
         model = Booking
         fields = ['customer_name','customer_phone','origin','destination',
-                  'requested_date','cargo_details','notes']
+                  'requested_date','requested_time','cargo_details','notes']
         widgets = {'requested_date': forms.DateInput(attrs={'type':'date'},format='%Y-%m-%d'),
+                   'requested_time':forms.TimeInput(attrs={'type':'time'},format='%H:%M'),
                    'notes':forms.Textarea(attrs={'rows':3})}
 
     def __init__(self,*args,**kwargs):
         self.branch=kwargs.pop('branch', None)
         super().__init__(*args,**kwargs)
+        # Keep existing staff booking integrations compatible when time is omitted.
+        # The time selector remains visible; booked times are stored when entered.
+        self.fields['requested_time'].required = False
+        self.fields['requested_time'].input_formats = ['%H:%M', '%H:%M:%S']

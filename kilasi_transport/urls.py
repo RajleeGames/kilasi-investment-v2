@@ -32,6 +32,7 @@ urlpatterns = [
     path('bookings/<int:pk>/edit/', views.booking_edit, name='booking_edit'),
     path('bookings/<int:pk>/status/', views.booking_status, name='booking_status'),
     path('expenses/', views.expenses, name='expenses'),
+    path('expenses/trip-options/', views.expense_trip_options, name='expense_trip_options'),
     path('expenses/<int:pk>/void/', views.expense_void, name='expense_void'),
     path('reports/', views.reports, name='reports'),
 ]

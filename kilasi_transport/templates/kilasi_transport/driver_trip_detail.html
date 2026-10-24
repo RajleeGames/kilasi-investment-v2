@@ -17,7 +17,6 @@
     <div><small>From</small><strong>{{ trip.origin }}</strong></div>
     <div><small>To</small><strong>{{ trip.destination }}</strong></div>
     <div><small>Scheduled departure</small><strong>{{ trip.scheduled_start|date:'d M Y H:i' }}</strong></div>
-    <div><small>Scheduled arrival</small><strong>{{ trip.scheduled_end|date:'d M Y H:i' }}</strong></div>
     <div><small>Cargo details</small><strong>{{ trip.cargo_details|default:'—' }}</strong></div>
     <div><small>Completed at</small><strong>{{ trip.completed_at|date:'d M Y H:i'|default:'—' }}</strong></div>
     {% if trip.notes %}<div class="ki-driver-span-2"><small>Notes</small><strong>{{ trip.notes }}</strong></div>{% endif %}

@@ -60,7 +60,7 @@ class Trip(models.Model):
     destination = models.CharField(max_length=180)
     cargo_details = models.CharField(max_length=240, blank=True)
     scheduled_start = models.DateTimeField()
-    scheduled_end = models.DateTimeField()
+    scheduled_end = models.DateTimeField(null=True, blank=True, help_text="Legacy optional arrival time; new trips have no estimated end time.")
     agreed_fee = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(ZERO)])
     status = models.CharField(max_length=16, choices=STATES, default='planned')
     completed_at = models.DateTimeField(null=True, blank=True)
@@ -100,6 +100,30 @@ class Trip(models.Model):
     def balance(self):
         return max(ZERO, self.agreed_fee - self.collected)
 
+    @property
+    def payment_state(self):
+        if self.status == 'cancelled':
+            return 'Cancelled'
+        if self.agreed_fee <= ZERO:
+            return 'No charge'
+        if self.balance <= ZERO:
+            return 'Fully paid'
+        if self.collected > ZERO:
+            return 'Partially paid'
+        return 'Unpaid'
+
+    @property
+    def fully_paid_at(self):
+        """Actual date/time the accumulated non-voided installments covered the fare."""
+        if self.agreed_fee <= ZERO or self.balance > ZERO:
+            return None
+        running = ZERO
+        for p in self.payments.filter(is_voided=False).order_by('paid_at', 'pk'):
+            running += p.amount
+            if running >= self.agreed_fee:
+                return p.paid_at
+        return None
+
     def __str__(self):
         return self.reference or f'Trip {self.pk}'
 
@@ -113,6 +137,7 @@ class Booking(models.Model):
     origin = models.CharField(max_length=180)
     destination = models.CharField(max_length=180)
     requested_date = models.DateField()
+    requested_time = models.TimeField(null=True, blank=True, help_text="Scheduled service time; may be unknown on older records.")
     cargo_details = models.CharField(max_length=240, blank=True)
     quoted_amount = models.DecimalField(max_digits=14, decimal_places=2, default=ZERO, validators=[MinValueValidator(ZERO)])
     trip = models.ForeignKey(Trip, on_delete=models.PROTECT, null=True, blank=True, related_name='bookings')
@@ -135,6 +160,24 @@ class Booking(models.Model):
         if creating and not self.reference:
             self.reference = f'KI-BK-{self.pk:06d}'
             type(self).objects.filter(pk=self.pk).update(reference=self.reference)
+
+    @property
+    def schedule_label(self):
+        return (self.requested_date.strftime('%d %b %Y') +
+                (' ' + self.requested_time.strftime('%H:%M') if self.requested_time else ' (time not recorded)'))
+
+    @property
+    def is_overdue(self):
+        if self.status not in ('pending', 'confirmed'):
+            return False
+        if self.trip_id and self.trip.status == 'completed':
+            return False
+        today = timezone.localdate()
+        if self.requested_date < today:
+            return True
+        if self.requested_date > today or not self.requested_time:
+            return False
+        return self.requested_time < timezone.localtime().time().replace(tzinfo=None)
 
     def __str__(self):
         return self.reference or f'Booking {self.pk}'

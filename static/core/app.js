@@ -240,6 +240,38 @@ document.addEventListener('DOMContentLoaded',()=>{
   $$('select.form-control').forEach(enhanceSelect);
   document.addEventListener('click',()=>closeSelects());
 
+  /* HAMA Transport expenses: date-first trip options, same global JS and styled dropdown. */
+  const hamaExpenseForm=$('[data-hama-expense-form]');
+  if(hamaExpenseForm){
+    const day=$('[name="expense_date"]',hamaExpenseForm);
+    const trip=$('[name="trip"]',hamaExpenseForm);
+    const endpoint=hamaExpenseForm.dataset.tripsUrl;
+    let requestId=0;
+    day?.addEventListener('change',async()=>{
+      if(!trip||!endpoint)return;
+      const id=++requestId;
+      trip.disabled=true;
+      try{
+        const response=await fetch(endpoint+'?date='+encodeURIComponent(day.value),{
+          headers:{'Accept':'application/json'},credentials:'same-origin'
+        });
+        if(!response.ok)throw Error('Could not load trips');
+        const data=await response.json();
+        if(id!==requestId)return;
+        trip.replaceChildren(new Option('General expense (no specific trip)',''));
+        (data.trips||[]).forEach(item=>trip.add(new Option(item.label,String(item.id))));
+        trip.value='';
+        trip.dispatchEvent(new Event('change',{bubbles:true}));
+      }catch(error){
+        if(id===requestId){
+          trip.replaceChildren(new Option('Could not load trips – check the date',''));
+          trip.value='';
+          trip.dispatchEvent(new Event('change',{bubbles:true}));
+        }
+      }finally{if(id===requestId)trip.disabled=false;}
+    });
+  }
+
   /* Modals */
   let lastModalTrigger=null;
   function openModal(id,trigger){const modal=$('#'+id);if(!modal)return;lastModalTrigger=trigger||null;closeSelects();modal.classList.add('open');document.body.style.overflow='hidden';setTimeout(()=>modal.querySelector('input:not([type=hidden]),button,select,textarea')?.focus(),40);}

@@ -19,6 +19,11 @@
     <select name="driver" class="form-control"><option value="">All drivers</option>
     {% for d in driver_choices %}<option value="{{ d.pk }}" {% if selected_driver == d.pk|stringformat:'s' %}selected{% endif %}>{{ d.full_name }}</option>{% endfor %}
     </select></label>{% endif %}
+  {% if payment_filter_choices %}<label>Payment
+    <select name="payment" class="form-control"><option value="">All payment states</option>
+      {% for key, label in payment_filter_choices %}<option value="{{ key }}" {% if payment_filter == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </label>{% endif %}
   {% if category_choices %}<label>Category
     <select name="category" class="form-control"><option value="">All categories</option>
     {% for key, label in category_choices %}<option value="{{ key }}" {% if category == key %}selected{% endif %}>{{ label }}</option>{% endfor %}

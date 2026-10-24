@@ -9,16 +9,18 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Q, Sum, Count
+from django.db.models import Q, Sum, Count, F, Value, DecimalField
+from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .permissions import transport_manager_required as admin_required, transport_staff_required
 from types import SimpleNamespace
-from .forms import BookingForm, DriverForm, TransportExpenseForm, TripForm, TripPaymentForm, VehicleForm
+from .forms import BookingForm, DriverForm, TransportExpenseForm, TripForm, TripPaymentForm, VehicleForm, expense_trips_for_day, expense_trip_label
 from .staff_forms import StaffBookingForm
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
+from django.views.decorators.http import require_GET
 from .models import Booking, Driver, TransportExpense, Trip, TripPayment, Vehicle, ZERO
 
 
@@ -67,16 +69,62 @@ def _finance(branch, start, end, vehicle_id=None, driver_id=None):
             'payment_count': payments.count(), 'expense_count': expenses.count()}
 
 
+def _driver_performance(start, end, vehicle_id=None, driver_id=None):
+    """Period charges on completed trips; payments/expenses by their actual posted dates.
+
+    Remaining balance concerns completed trips in the period, including installments
+    collected later. Never treat agreed fee as cash received.
+    """
+    scope = {}
+    if vehicle_id: scope['vehicle_id'] = vehicle_id
+    if driver_id: scope['driver_id'] = driver_id
+    completed = Trip.objects.filter(status='completed', completed_at__date__range=(start, end), **scope)
+    payment_filters = {'trip__'+k:v for k,v in scope.items()}
+    payment_data = (TripPayment.objects.filter(is_voided=False, paid_at__date__range=(start, end), **payment_filters)
+                    .values('trip__driver_id').annotate(money=Sum('amount')))
+    expense_data = (TransportExpense.objects.filter(is_voided=False, trip__isnull=False,
+                    expense_date__range=(start, end), **payment_filters)
+                    .values('trip__driver_id').annotate(money=Sum('amount')))
+    completed_data = completed.values('driver_id').annotate(count=Count('pk'), charges=Sum('agreed_fee'))
+    totals = {}
+    def slot(pk):
+        return totals.setdefault(pk, {'trip_count':0,'total_charges':ZERO,
+                                     'collected':ZERO,'expenses':ZERO,'balance':ZERO})
+    for row in completed_data:
+        r=slot(row['driver_id']);r['trip_count']=row['count'];r['total_charges']=row['charges'] or ZERO
+    for row in payment_data:slot(row['trip__driver_id'])['collected']=row['money'] or ZERO
+    for row in expense_data:slot(row['trip__driver_id'])['expenses']=row['money'] or ZERO
+    for trip in completed.prefetch_related('payments'):
+        slot(trip.driver_id)['balance'] += trip.balance
+    names=dict(Driver.objects.filter(pk__in=totals).values_list('pk','full_name'))
+    result=[]
+    for pk, metric in totals.items():
+        result.append({'driver_name':names.get(pk, f'Driver #{pk}'), **metric,
+                       'net_cash':metric['collected']-metric['expenses']})
+    return sorted(result,key=lambda r:(-r['trip_count'],-r['total_charges'],r['driver_name']))
+
+
+def _overdue_bookings():
+    # Never manufacture an overdue hour for historical bookings with no time.
+    today = timezone.localdate()
+    candidates=Booking.objects.filter(status__in=('pending','confirmed')).filter(
+        Q(requested_date__lt=today) | Q(requested_date=today, requested_time__isnull=False)
+    ).select_related('trip')
+    return [b for b in candidates if b.is_overdue]
+
+
 @transport_staff_required
 def dashboard(request):
     branch = None
     start, end = _period(request)
     member = getattr(request, 'transport_access', None)
     if member and member.role == 'staff':
+        overdue=_overdue_bookings()
         return render(request, 'kilasi_transport/staff_dashboard.html', {
             'branch': SimpleNamespace(name='HAMA NA KILASI'),
             'open_trips': Trip.objects.filter(status__in=['planned','in_progress']).count(),
             'pending_bookings': Booking.objects.filter(status='pending').count(),
+            'overdue_count':len(overdue), 'overdue_bookings':overdue[:8],
             'vehicle_count': Vehicle.objects.filter(status='active').count(),
             'recent_trips': Trip.objects.filter().select_related('vehicle')[:12],
         })
@@ -89,9 +137,8 @@ def dashboard(request):
     all_completed=Trip.objects.filter(status='completed', completed_at__date__range=(start,end))
     if vehicle_id: all_completed=all_completed.filter(vehicle_id=vehicle_id)
     if driver_id: all_completed=all_completed.filter(driver_id=driver_id)
-    ranks=(all_completed.values('driver_id','driver__full_name')
-           .annotate(trip_count=Count('pk'),total_charges=Sum('agreed_fee'))
-           .order_by('-trip_count','-total_charges','driver__full_name'))
+    ranks=_driver_performance(start,end,vehicle_id,driver_id)
+    overdue=_overdue_bookings()
     recent_scope=Trip.objects.select_related('vehicle','driver')
     if vehicle_id: recent_scope=recent_scope.filter(vehicle_id=vehicle_id)
     if driver_id: recent_scope=recent_scope.filter(driver_id=driver_id)
@@ -106,6 +153,7 @@ def dashboard(request):
         'driver_choices': Driver.objects.order_by('full_name'),
         'selected_vehicle': str(vehicle_id or ''), 'selected_driver': str(driver_id or ''),
         'scoped_finance': filtered, 'driver_ranks': ranks,
+        'overdue_count': len(overdue), 'overdue_bookings': overdue[:8],
         'recent_bookings': Booking.objects.filter()[:8],
     })
 
@@ -157,6 +205,19 @@ def driver_edit(request, pk=None):
 @transport_staff_required
 def trips(request):
     qs = Trip.objects.select_related('vehicle', 'driver').order_by('-scheduled_start', '-pk')
+    payment_filter = (request.GET.get('payment') or '').strip()
+    if payment_filter in ('paid', 'partial', 'unpaid'):
+        qs = qs.annotate(_paid_total=Coalesce(
+            Sum('payments__amount', filter=Q(payments__is_voided=False)),
+            Value(ZERO), output_field=DecimalField(max_digits=14,decimal_places=2)))
+        if payment_filter == 'paid':
+            qs=qs.filter(agreed_fee__gt=0, _paid_total__gte=F('agreed_fee'))
+        elif payment_filter == 'partial':
+            qs=qs.filter(agreed_fee__gt=F('_paid_total'), _paid_total__gt=0)
+        else:
+            qs=qs.filter(agreed_fee__gt=0, _paid_total=0)
+    else:
+        payment_filter = ''
     data = filtered_page(
         request, qs, date_field='scheduled_start__date',
         search_fields=(
@@ -177,7 +238,9 @@ def trips(request):
     for trip in data['rows']:
         trip.sms_jobs=by_trip.get(trip.pk,[])
     data.update(vehicle_choices=Vehicle.objects.order_by('registration'),
-                driver_choices=Driver.objects.order_by('full_name'))
+                driver_choices=Driver.objects.order_by('full_name'),
+                payment_filter=payment_filter, payment_filter_choices=(('paid','Fully paid'),('partial','Partially paid'),('unpaid','Unpaid')))
+
     return render(request, 'kilasi_transport/trips.html', _ctx(request, **data))
 
 
@@ -243,6 +306,9 @@ def trip_status(request, pk):
                 trip.cancelled_by = request.user
                 trip.save(update_fields=['status', 'cancel_reason', 'cancelled_at', 'cancelled_by'])
                 messages.success(request, f'{trip.reference} cancelled. Original record and audit trail retained.')
+        elif action == 'in_progress' and Trip.objects.filter(status='in_progress').exclude(pk=trip.pk).filter(
+                Q(vehicle_id=trip.vehicle_id) | Q(driver_id=trip.driver_id)).exists():
+            messages.error(request, 'This driver or vehicle already has a trip in progress.')
         else:
             trip.status = action
             if action == 'completed':
@@ -309,6 +375,8 @@ def bookings(request):
         search_fields=('reference', 'customer_name', 'customer_phone', 'origin', 'destination'),
         statuses=Booking.STATES,
     )
+    for b in data['rows']:
+        b.overdue_display = b.is_overdue
     return render(request, 'kilasi_transport/bookings.html', _ctx(request, **data))
 
 
@@ -374,6 +442,19 @@ def expenses(request):
         category_choices=TransportExpense.CATEGORIES,
     )
     return render(request, 'kilasi_transport/expenses.html', _ctx(request, form=form, **data))
+
+
+@admin_required
+@require_GET
+def expense_trip_options(request):
+    from datetime import date
+    value=(request.GET.get('date') or '').strip()
+    try:
+        day=date.fromisoformat(value)
+    except ValueError:
+        return JsonResponse({'error':'Choose a valid expense date.'},status=400)
+    rows=expense_trips_for_day(day)[:2000]
+    return JsonResponse({'trips':[{'id':t.pk,'label':expense_trip_label(t)} for t in rows]})
 
 
 @admin_required

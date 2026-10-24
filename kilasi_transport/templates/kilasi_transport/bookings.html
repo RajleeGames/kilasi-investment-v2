@@ -3,13 +3,13 @@
 {% block content %}
 <div class="page-head"><div><h1>Transport bookings</h1><p>Requests, trip assignments and status; filter by requested service date. Quotes are not recorded revenue.</p></div><a class="btn btn-primary" href="{% url 'transport:booking_new' %}">New booking</a></div>
 {% include 'kilasi_transport/_list_filters.html' %}
-<section class="card"><div class="table-wrap"><table><thead><tr><th>Reference</th><th>Customer</th><th>Route</th><th>Requested date</th>{% if transport_is_manager %}<th>Quote</th>{% endif %}<th>Linked trip</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+<section class="card"><div class="table-wrap"><table><thead><tr><th>Reference</th><th>Customer</th><th>Route</th><th>Requested date &amp; time</th>{% if transport_is_manager %}<th>Quote</th>{% endif %}<th>Linked trip</th><th>Status</th><th>Actions</th></tr></thead><tbody>
 {% for b in rows %}<tr>
 <td><strong>{{ b.reference }}</strong></td><td>{{ b.customer_name }}<small class="cell-sub">{{ b.customer_phone }}</small></td>
-<td>{{ b.origin }} → {{ b.destination }}</td><td>{{ b.requested_date|date:'d M Y' }}</td>
+<td>{{ b.origin }} → {{ b.destination }}</td><td>{{ b.requested_date|date:'d M Y' }} {% if b.requested_time %}<strong>{{ b.requested_time|time:'H:i' }}</strong>{% else %}<small class="cell-sub">Time not recorded</small>{% endif %}</td>
 {% if transport_is_manager %}<td>{{ b.quoted_amount|money }}</td>{% endif %}
 <td>{% if b.trip_id %}<a class="table-link" href="{% url 'transport:trip_detail' b.trip_id %}">{{ b.trip.reference }}</a>{% else %}—{% endif %}</td>
-<td><span class="badge">{{ b.get_status_display }}</span></td>
+<td><span class="badge">{{ b.get_status_display }}</span>{% if b.overdue_display %}<small class="cell-sub" role="alert"><strong>OVERDUE</strong> · Service time passed; review this booking</small>{% endif %}</td>
 <td><div class="row-actions">{% if transport_is_manager %}
 {% if b.status == 'pending' or b.status == 'confirmed' %}<a class="btn btn-secondary btn-sm" href="{% url 'transport:booking_edit' b.pk %}">Edit</a>{% endif %}
 {% if b.status == 'pending' %}<form method="post" action="{% url 'transport:booking_status' b.pk %}">{% csrf_token %}<input type="hidden" name="status" value="confirmed"><button class="btn btn-secondary btn-sm">Confirm</button></form>{% endif %}
