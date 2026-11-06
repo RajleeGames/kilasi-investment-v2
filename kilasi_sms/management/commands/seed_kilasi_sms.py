@@ -11,6 +11,7 @@ PRESETS = [
  ('Retail','Genji / top-up — future module','Ndugu {first_name}, tunakushukuru kwa huduma ya kubadilisha bidhaa Kilasi Investment. Rejea: {reference}.'),
  ('Transport','Booking received','Ndugu {first_name}, booking yako {reference} imepokelewa HAMA NA KILASI: {pickup} hadi {destination}. Tutakujulisha ikithibitishwa.'),
  ('Transport','Booking confirmed','Ndugu {first_name}, booking yako {reference} imethibitishwa. Kutoka {pickup} kwenda {destination}. Ahsante.'),
+ ('Transport','New booking boss','Booking mpya {reference}: mteja {customer} ({customer_phone}), ''{pickup} kwenda {destination}, tarehe {date}, makadirio TZS {amount}. ''HAMA NA KILASI.'),
  ('Transport','New trip customer','Ndugu {first_name}, safari {reference} imepangwa HAMA NA KILASI. {pickup} kwenda {destination}; gari {vehicle}, dereva {driver}. Asante.'),
  ('Transport','New trip boss','Safari mpya {reference}: gari {vehicle}, dereva {driver}, {pickup} kwenda {destination}. TZS {amount}. Mteja: {customer}.'),
  ('Transport','Before transport','Ndugu {first_name}, kumbusho la safari yako {reference} kutoka {pickup} kwenda {destination} tarehe {date}. Tafadhali kuwa tayari.'),

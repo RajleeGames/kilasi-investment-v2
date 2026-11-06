@@ -1,5 +1,6 @@
 """Initialize OFF-by-default branch and department SMS rules. No sends."""
 from django.core.management.base import BaseCommand
+from django.utils import timezone
 from core.models import Branch
 from sms_center.models import SmsTemplate
 from kilasi_sms.models import KilasiSmsAutomationRule
@@ -25,7 +26,23 @@ class Command(BaseCommand):
             if department!='transport':continue
             template=SmsTemplate.objects.filter(name=template_name,category='Kilasi Transport').first()
             if not template:continue
-            _,made=KilasiSmsAutomationRule.objects.get_or_create(
-                branch=None,event_key=key,defaults={'department':'transport','template':template,'enabled':False,'sender_id':''})
-            created_count+=int(made)
+            defaults = {'department': 'transport', 'template': template,
+                        'enabled': False, 'sender_id': ''}
+            if key == 'transport.booking_created_boss':
+                # Reuse the boss trip sender and enablement already configured.
+                # Does not touch existing rules; does not backfill old bookings.
+                boss_trip = KilasiSmsAutomationRule.objects.filter(
+                    branch__isnull=True, event_key='transport.trip_created_boss'
+                ).first()
+                if boss_trip:
+                    defaults['sender_id'] = boss_trip.sender_id
+                    defaults['enabled'] = bool(boss_trip.enabled and boss_trip.sender_id)
+                    defaults['enabled_at'] = (
+                        (boss_trip.enabled_at or timezone.now())
+                        if defaults['enabled'] else None
+                    )
+                    defaults['changed_by'] = boss_trip.changed_by
+            _, made = KilasiSmsAutomationRule.objects.get_or_create(
+                branch=None, event_key=key, defaults=defaults)
+            created_count += int(made)
         self.stdout.write(self.style.SUCCESS(f'Created {created_count} disabled rules. Zero SMS sent.'))

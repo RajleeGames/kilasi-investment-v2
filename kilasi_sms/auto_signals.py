@@ -30,6 +30,10 @@ def prior_booking(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Booking, dispatch_uid='kilasi5b_booking_after')
 def after_booking(sender, instance, created, **kwargs):
+    # Notify the boss exactly once for each new booking, even if it
+    # was initially confirmed. Existing customer messages are unchanged.
+    if created:
+        later('transport.booking_created_boss', Booking, instance.pk)
     if created and instance.status=='pending':later('transport.booking_received',Booking,instance.pk)
     if instance.status=='confirmed' and (created or instance._sms_previous_status!='confirmed'):
         later('transport.booking_confirmed',Booking,instance.pk)

@@ -32,6 +32,25 @@ def _event_row(event_key, instance):
         return dict(branch=instance.sale.branch, name=instance.delivered_to or (c.name if c else 'Mteja'),
                     phone=c.phone if c else '', reference=instance.number,
                     date=instance.issue_date, status='delivery', user=instance.created_by)
+    if isinstance(instance, Booking) and event_key == 'transport.booking_created_boss':
+        # Boss notifications are independent of the customer's phone and
+        # use the same existing boss settings as trip_created_boss.
+        if instance.status == 'cancelled':
+            return None
+        return dict(
+            branch=None,
+            name=getattr(settings, 'TRANSPORT_BOSS_NAME', 'Boss'),
+            phone=getattr(settings, 'TRANSPORT_BOSS_PHONE', ''),
+            reference=instance.reference or f"KI-BK-{instance.pk:06d}",
+            pickup=instance.origin,
+            destination=instance.destination,
+            date=instance.schedule_label,
+            amount=instance.quoted_amount,
+            status=instance.status,
+            customer=instance.customer_name,
+            customer_phone=instance.customer_phone,
+            user=instance.created_by,
+        )
     if isinstance(instance, Booking) and event_key.startswith('transport.booking_'):
         if event_key.endswith('received') and instance.status != 'pending': return None
         if event_key.endswith('confirmed') and instance.status != 'confirmed': return None
@@ -131,6 +150,8 @@ def _event_still_eligible(job):
     if k=='retail.delivery_completed':
         return DeliveryNote.objects.filter(pk=job.source_id,sale__branch=job.branch,
                sale__status='completed',kilasi_sms_delivery_confirmation__isnull=False).exists()
+    if k=='transport.booking_created_boss':
+        return Booking.objects.filter(pk=job.source_id).exclude(status='cancelled').exists()
     if k=='transport.booking_received':
         return Booking.objects.filter(pk=job.source_id,status='pending').exists()
     if k=='transport.booking_confirmed':
