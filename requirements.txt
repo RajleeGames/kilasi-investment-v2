@@ -7,3 +7,4 @@ tzdata==2026.3
 
 gunicorn==23.0.0
 requests==2.34.2
+XlsxWriter>=3.2,<4

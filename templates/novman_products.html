@@ -1,7 +1,7 @@
 {% extends 'base.html' %}{% load mfp %}
 {% block page_title %}Products{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>Retail products</h1><p>Furniture, electronics, mattresses and other merchandise. Stock shown for {{ branch.name }}.</p></div><div class="head-actions"><a class="btn btn-secondary" href="{% url 'retail_overview' %}">Retail overview</a><a class="btn btn-primary" href="{% url 'product_create' %}">Add product</a></div></div>
+<div class="page-head"><div><h1>Retail products</h1><p>Furniture, electronics, mattresses and other merchandise. Stock shown for {{ branch.name }}.</p></div><div class="head-actions"><a class="btn btn-secondary" href="{% url 'kilasi_stock_excel' %}">Export Excel</a><a class="btn btn-secondary" href="{% url 'retail_overview' %}">Retail overview</a><a class="btn btn-primary" href="{% url 'product_create' %}">Add product</a></div></div>
 <form method="get" class="novman-filters">
   <label>Search<input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Product, barcode or category"></label>
   <label>Retail division<select class="form-control" name="division"><option value="">All divisions</option>{% for code,label in division_choices %}<option value="{{ code }}" {% if division == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>

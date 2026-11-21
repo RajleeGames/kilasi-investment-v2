@@ -6,6 +6,7 @@ from . import novman_views
 from . import novman_tools
 from . import kilasi_retail
 from . import kilasi_finance
+from . import kilasi_stock_excel
 
 
 urlpatterns = [
@@ -48,6 +49,7 @@ urlpatterns = [
     # ------------------------------------------------------------
     # Products
     # ------------------------------------------------------------
+    path('products/export-excel/', kilasi_stock_excel.branch_stock_excel, name='kilasi_stock_excel'),
     path(
         'products/',
         novman_views.products,
