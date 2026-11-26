@@ -2,6 +2,12 @@
 <!doctype html>
 <html lang="en">
 <head>
+  {% if shop.logo %}
+  <link rel="icon" href="{{ shop.logo.url }}?v=20261126">
+  {% else %}
+  <link rel="icon" type="image/jpeg" href="{% static 'core/brand/kilasi-sidebar.jpg' %}?v=20261126">
+  {% endif %}
+
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Sign in{% if shop.name %} · {{ shop.name }}{% endif %}</title>

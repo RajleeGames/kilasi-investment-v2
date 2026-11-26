@@ -6,7 +6,7 @@
 <form method="post" class="form-body" novalidate data-hama-expense-form data-trips-url="{% url 'transport:expense_trip_options' %}">{% csrf_token %}
 <div class="kt-form-grid">{% for field in form %}<div class="form-group"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<span class="field-error">{{ field.errors|striptags }}</span>{% endif %}</div>{% endfor %}</div>
 <div class="form-actions"><button class="btn btn-primary" type="submit">Save expense</button></div></form></section>
-<section class="section-gap"><div class="page-head"><div><h2>Expense history</h2><p>Filter by expense date, description, trip or posted/voided state.</p></div></div>
+<section class="section-gap"><div class="page-head"><div><h2>Expense history</h2><p>Filter expenses by vehicle, date, category, trip or payment record state.</p></div></div>
 {% include 'kilasi_transport/_list_filters.html' %}
 <section class="card"><div class="table-wrap"><table><thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Trip / driver</th><th>Amount</th><th>State</th><th>Action / audit</th></tr></thead><tbody>
 {% for x in rows %}<tr><td>{{ x.expense_date|date:'d M Y' }}</td><td>{{ x.get_category_display }}</td><td>{{ x.description }}</td>

@@ -4,6 +4,9 @@ Important: never issue a provider request in a Django save/signal, request handl
 seed, migration or a failed/rolled-back transaction.
 """
 from datetime import timedelta
+import logging
+
+logger = logging.getLogger(__name__)
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
@@ -21,7 +24,7 @@ def _event_row(event_key, instance):
         if instance.status != 'completed' or not instance.branch_id or not instance.customer_id:
             return None
         c = instance.customer
-        return dict(branch=instance.branch, name=c.name, phone=c.phone,
+        return dict(branch=instance.branch, name=instance.customer_name or c.name, phone=c.phone,
                     reference=instance.receipt_no, amount=instance.grand_total,
                     date=timezone.localdate(instance.sold_at), status=instance.status,
                     user=instance.cashier)
@@ -52,7 +55,7 @@ def _event_row(event_key, instance):
             user=instance.created_by,
         )
     if isinstance(instance, Booking) and event_key.startswith('transport.booking_'):
-        if event_key.endswith('received') and instance.status != 'pending': return None
+        if event_key.endswith('received') and instance.status not in ('pending', 'confirmed'): return None
         if event_key.endswith('confirmed') and instance.status != 'confirmed': return None
         return dict(branch=None, name=instance.customer_name,
                     phone=instance.customer_phone, reference=instance.reference,
@@ -88,14 +91,37 @@ def enqueue_event(event_key, model, pk):
         branch=row['branch']
         rule=(KilasiSmsAutomationRule.objects.select_related('template')
               .filter(branch=(branch if not event_key.startswith('transport.') else None), event_key=event_key, enabled=True).first())
-        if not rule or not rule.enabled_at or not rule.template.is_active:
+        if not rule:
+            logger.info(
+                'SMS skipped: %s #%s - no enabled rule',
+                event_key, pk
+            )
+            return None
+
+        if not rule.enabled_at or not rule.template.is_active:
+            logger.warning(
+                'SMS skipped: %s #%s - incomplete rule or inactive template',
+                event_key, pk
+            )
             return None
         phone=normalize_phone(row.get('phone'))
         if not phone or not phone.startswith('255') or len(phone)!=12:
+            logger.warning(
+                'SMS skipped: %s #%s - missing or invalid phone',
+                event_key, pk
+            )
             return None
         if not rule.sender_id or not SmsSenderProfile.objects.filter(sender_id=rule.sender_id, is_active=True).exists():
+            logger.warning(
+                'SMS skipped: %s #%s - sender unavailable',
+                event_key, pk
+            )
             return None
         if blocked_numbers([phone]):
+            logger.info(
+                'SMS skipped: %s #%s - customer opted out or inactive',
+                event_key, pk
+            )
             return None
         payload={**row, 'phone':phone, 'branch':branch.name if branch else 'HAMA NA KILASI'}
         message=personalized(rule.template.body,payload)
@@ -153,7 +179,10 @@ def _event_still_eligible(job):
     if k=='transport.booking_created_boss':
         return Booking.objects.filter(pk=job.source_id).exclude(status='cancelled').exists()
     if k=='transport.booking_received':
-        return Booking.objects.filter(pk=job.source_id,status='pending').exists()
+        return Booking.objects.filter(
+            pk=job.source_id,
+            status__in=('pending', 'confirmed')
+        ).exists()
     if k=='transport.booking_confirmed':
         return Booking.objects.filter(pk=job.source_id,status='confirmed').exists()
     if k in ('transport.trip_created','transport.trip_created_boss'):

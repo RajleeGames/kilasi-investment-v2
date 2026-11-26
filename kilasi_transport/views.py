@@ -433,14 +433,24 @@ def expenses(request):
             item.save()
         messages.success(request, 'Transport expense recorded.')
         return redirect('transport:expenses')
-    qs = TransportExpense.objects.select_related('trip', 'created_by').order_by('-expense_date', '-pk')
+    qs = TransportExpense.objects.select_related(
+        'trip', 'trip__vehicle', 'trip__driver', 'created_by'
+    ).order_by('-expense_date', '-pk')
     data = filtered_page(
         request, qs, date_field='expense_date',
-        search_fields=('description', 'trip__reference', 'created_by__username'),
+        search_fields=(
+            'description',
+            'trip__reference',
+            'trip__vehicle__registration',
+            'trip__driver__full_name',
+            'created_by__username',
+        ),
+        vehicle_field='trip__vehicle_id',
         statuses=(('posted', 'Posted'), ('voided', 'Voided')),
         state_field='is_voided',
         category_choices=TransportExpense.CATEGORIES,
     )
+    data['vehicle_choices'] = Vehicle.objects.order_by('registration')
     return render(request, 'kilasi_transport/expenses.html', _ctx(request, form=form, **data))
 
 

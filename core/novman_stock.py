@@ -104,6 +104,33 @@ def sell(*, branch, cart, payment_method, customer_name, customer_phone, sale_di
             customer = Customer.objects.filter(name__iexact=customer_name, is_active=True).first()
         if customer is None:
             customer = Customer.objects.create(name=customer_name, phone=phone)
+    # Preserve customer contact for non-credit retail sales too.
+    # Do not change existing debt-account matching.
+    if payment_method != 'debt' and phone:
+        from sms_center.services import normalize_phone
+
+        normalized = normalize_phone(phone)
+
+        if normalized.startswith('255') and len(normalized) == 12:
+            variants = {
+                phone,
+                normalized,
+                '+' + normalized,
+                '0' + normalized[3:],
+                normalized[3:],
+            }
+
+            customer = Customer.objects.filter(
+                phone__in=variants,
+                is_active=True,
+            ).order_by('pk').first()
+
+            if customer is None:
+                customer = Customer.objects.create(
+                    name=(customer_name or 'Mteja')[:120],
+                    phone=normalized,
+                )
+
     sale = Sale.objects.create(branch=branch, payment_method=payment_method,
         customer=customer, customer_name=customer_name, sale_discount=discount_total,
         cashier=cashier)

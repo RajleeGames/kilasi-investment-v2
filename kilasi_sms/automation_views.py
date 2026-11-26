@@ -49,7 +49,7 @@ def automations(request):
             rule.template=template
             rule.sender_id=sender
             rule.enabled=active
-            if active and not was_enabled:rule.enabled_at=timezone.now()
+            if active and (not was_enabled or not rule.enabled_at):rule.enabled_at=timezone.now()
             rule.changed_by=request.user
             rule.full_clean()
             rule.save()
