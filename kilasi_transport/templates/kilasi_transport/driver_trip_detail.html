@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %}{% load mfp %}
 {% block title %}{{ trip.reference }} · {{ shop.name }}{% endblock %}
 {% block page_title %}Trip details{% endblock %}
 {% block body_class %}ki-driver-page{% endblock %}
@@ -14,6 +14,10 @@
     <div><small>Customer phone</small><strong>{{ trip.customer_phone|default:'—' }}</strong></div>
     <div><small>Vehicle</small><strong>{{ trip.vehicle.registration }}</strong></div>
     <div><small>Driver</small><strong>{{ trip.driver.full_name }}</strong></div>
+    <div>
+      <small>Trip amount</small>
+      <strong>{{ trip.agreed_fee|money }} TZS</strong>
+    </div>
     <div><small>From</small><strong>{{ trip.origin }}</strong></div>
     <div><small>To</small><strong>{{ trip.destination }}</strong></div>
     <div><small>Scheduled departure</small><strong>{{ trip.scheduled_start|date:'d M Y H:i' }}</strong></div>

@@ -5,7 +5,7 @@
 {% block content %}
 <div class="page-head"><div><h1>{% if editing %}Edit {{ trip.reference }}{% else %}Create transport trip{% endif %}</h1><p>HAMA NA KILASI · Your driver account is assigned automatically</p></div><a class="btn btn-secondary" href="{% if editing %}{% url 'transport:driver_trip_detail' trip.pk %}{% else %}{% url 'transport:driver_home' %}{% endif %}">Back</a></div>
 <section class="card ki-driver-form-card">
-  <div class="card-head"><div><h2>Trip details</h2><p>Enter the customer, vehicle, route, schedule and agreed amount. Only active, available vehicles can be selected.</p></div></div>
+  <div class="card-head"><div><h2>Trip details</h2><p>Enter the customer, vehicle, route, schedule and agreed amount. Only active vehicles can be selected.</p></div></div>
   <form method="post" class="form-body" novalidate>
     {% csrf_token %}
     {% if form.non_field_errors %}<div class="alert error">{{ form.non_field_errors }}</div>{% endif %}

@@ -37,7 +37,12 @@
     {{ trip.customer_name }}
 </p>
 
-      <div class="ki-driver-card-meta"><span><small>Departure</small><strong>{{ trip.scheduled_start|date:'d M Y H:i' }}</strong></span><span><small>Vehicle</small><strong>{{ trip.vehicle.registration }}</strong></span></div>
+      <div class="ki-driver-card-meta"><span><small>Departure</small><strong>{{ trip.scheduled_start|date:'d M Y H:i' }}</strong></span><span><small>Vehicle</small><strong>{{ trip.vehicle.registration }}</strong></span>
+      <span>
+        <small>Trip amount</small>
+        <strong>{{ trip.agreed_fee|money }} TZS</strong>
+      </span>
+      </div>
       <a class="btn btn-secondary btn-sm ki-driver-open" href="{% url 'transport:driver_trip_detail' trip.pk %}">View trip</a>
     </article>
     {% empty %}<p class="empty">No trips match these filters.</p>{% endfor %}
