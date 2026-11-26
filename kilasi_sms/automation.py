@@ -16,6 +16,85 @@ from .models import KilasiSmsAutomationRule, KilasiSmsAutomaticJob, KilasiSmsRet
 from .services import personalized, blocked_numbers, VARIABLE_PATTERN
 
 
+def sms_money(value):
+    return f"{value:,.2f}".rstrip("0").rstrip(".")
+
+
+def retail_receipt_message(template, sale, payload):
+    from django.core.exceptions import ValidationError
+
+    lines = []
+
+    for index, item in enumerate(
+        sale.items.select_related('product', 'unit').order_by('pk'),
+        start=1,
+    ):
+        name = " ".join(item.product.name.split())
+        unit = item.unit.symbol or item.unit.name
+        quantity = f"{item.quantity:,.3f}".rstrip("0").rstrip(".")
+
+        lines.append(
+            f"{index}. {name} ({quantity} {unit})"
+            f" - {sms_money(item.final_total)} TZS"
+        )
+
+    discount = sale.sale_discount
+
+    payload = {
+        **payload,
+        'amount': sms_money(sale.grand_total),
+        'sale_discount': sms_money(discount),
+        'discount_line': (
+            f"Punguzo la jumla: {sms_money(discount)} TZS\n"
+            if discount > 0 else ""
+        ),
+        'items': "",
+    }
+
+    # Validate the template independently of the product list.
+    base_message = personalized(template, payload)
+
+    if not lines:
+        return base_message
+
+    try:
+        return personalized(
+            template,
+            {**payload, 'items': "\n".join(lines)}
+        )
+    except ValidationError:
+        # Preserve the existing 1,000-character SMS safety limit.
+        pass
+
+    # Large purchases: retain complete product lines, receipt and total.
+    best = personalized(
+        template,
+        {
+            **payload,
+            'items': f"Bidhaa {len(lines)}. Angalia risiti kwa orodha kamili."
+        }
+    )
+
+    for count in range(1, len(lines)):
+        remaining = len(lines) - count
+
+        items = "\n".join(lines[:count])
+        items += (
+            f"\nBidhaa nyingine {remaining}. "
+            "Angalia risiti kwa orodha kamili."
+        )
+
+        try:
+            best = personalized(
+                template,
+                {**payload, 'items': items}
+            )
+        except ValidationError:
+            break
+
+    return best
+
+
 def _event_row(event_key, instance):
     from core.models import Sale
     from kilasi_transport.models import Booking, Trip
@@ -149,7 +228,12 @@ def enqueue_event(event_key, model, pk):
                     instance.scheduled_start
                 ).strftime('%d %b %Y')
 
-        message=personalized(rule.template.body,payload)
+        if event_key == 'retail.sale_thanks':
+            message = retail_receipt_message(
+                rule.template.body, instance, payload
+            )
+        else:
+            message = personalized(rule.template.body, payload)
         due=timezone.now()
         if event_key == 'transport.trip_reminder':
             # Do not remind for trips departing within 1h or cancelled trips.

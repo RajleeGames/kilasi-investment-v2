@@ -25,6 +25,13 @@
       <select class="form-control" name="template_id" required><option value="">Select template</option>
       {% for tmpl in templates %}<option value="{{ tmpl.id }}" {% if item.template_id == tmpl.id %}selected{% endif %}>{{ tmpl.name }}</option>{% endfor %}
       </select></label>
+    {% if item.key == 'retail.sale_thanks' %}
+    <p class="field-note">
+      Purchase SMS variables: {items}, {amount},
+      {reference}, {first_name}, {sale_discount},
+      {discount_line}.
+    </p>
+    {% endif %}
     <label>Beem-approved Sender ID
       <select class="form-control" name="sender_id"><option value="">Choose sender</option>
         {% for sender in senders %}<option value="{{ sender.sender_id }}" {% if item.rule.sender_id == sender.sender_id %}selected{% endif %}>{{ sender.sender_id }}</option>{% endfor %}
