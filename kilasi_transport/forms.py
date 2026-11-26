@@ -64,21 +64,7 @@ class TripForm(StyledForm):
             return data
         if vehicle.status != 'active' or driver.status != 'active':
             raise forms.ValidationError('Only active drivers and vehicles may be assigned.')
-        # No new arrival estimate: block same-minute departures and protect
-        # overlapping legacy trips which still have a recorded end time.
-        # The existing status transition guard also prevents two active trips.
-        minute_start = start.replace(second=0, microsecond=0)
-        minute_end = minute_start + timedelta(minutes=1)
-        overlaps = Trip.objects.filter(status__in=('planned', 'in_progress')).filter(
-            Q(vehicle=vehicle) | Q(driver=driver)
-        ).filter(
-            Q(scheduled_start__gte=minute_start, scheduled_start__lt=minute_end) |
-            Q(scheduled_start__lte=start, scheduled_end__gt=start)
-        )
-        if self.instance.pk:
-            overlaps = overlaps.exclude(pk=self.instance.pk)
-        if overlaps.exists():
-            raise forms.ValidationError('This driver or vehicle has another trip at this departure or already in progress.')
+        # Multiple trips per vehicle and driver are allowed.
         if self.instance.pk:
             paid = self.instance.collected
             if data.get('agreed_fee') is not None and data['agreed_fee'] < paid:

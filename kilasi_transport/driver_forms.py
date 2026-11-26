@@ -38,19 +38,5 @@ class DriverTripForm(StyledForm):
             return data
         if vehicle.status != 'active' or self.driver.status != 'active':
             raise forms.ValidationError('Vehicle and assigned driver must both be active.')
-        # No guessed duration: protect same-minute starts and old trips
-        # whose historical end time is known. In-progress conflicts are also
-        # enforced when a driver actually starts a trip.
-        minute_start = start.replace(second=0, microsecond=0)
-        minute_end = minute_start + timedelta(minutes=1)
-        conflict = Trip.objects.filter(status__in=('planned', 'in_progress')).filter(
-            Q(vehicle=vehicle) | Q(driver=self.driver)
-        ).filter(
-            Q(scheduled_start__gte=minute_start, scheduled_start__lt=minute_end) |
-            Q(scheduled_start__lte=start, scheduled_end__gt=start)
-        )
-        if self.instance.pk:
-            conflict = conflict.exclude(pk=self.instance.pk)
-        if conflict.exists():
-            raise forms.ValidationError('This vehicle or driver already has a trip during these hours.')
+        # Multiple trips per vehicle and driver are allowed.
         return data

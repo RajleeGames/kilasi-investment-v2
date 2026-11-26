@@ -306,9 +306,6 @@ def trip_status(request, pk):
                 trip.cancelled_by = request.user
                 trip.save(update_fields=['status', 'cancel_reason', 'cancelled_at', 'cancelled_by'])
                 messages.success(request, f'{trip.reference} cancelled. Original record and audit trail retained.')
-        elif action == 'in_progress' and Trip.objects.filter(status='in_progress').exclude(pk=trip.pk).filter(
-                Q(vehicle_id=trip.vehicle_id) | Q(driver_id=trip.driver_id)).exists():
-            messages.error(request, 'This driver or vehicle already has a trip in progress.')
         else:
             trip.status = action
             if action == 'completed':
