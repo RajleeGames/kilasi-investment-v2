@@ -13,7 +13,7 @@ from django.utils import timezone
 from sms_center.models import SmsCampaign, SmsRecipient, SmsSenderProfile
 from sms_center.services import normalize_phone, provider_configured, _send_one_payload, sms_segments
 from .models import KilasiSmsAutomationRule, KilasiSmsAutomaticJob, KilasiSmsRetryAudit
-from .services import personalized, blocked_numbers
+from .services import personalized, blocked_numbers, VARIABLE_PATTERN
 
 
 def _event_row(event_key, instance):
@@ -26,7 +26,9 @@ def _event_row(event_key, instance):
         c = instance.customer
         return dict(branch=instance.branch, name=instance.customer_name or c.name, phone=c.phone,
                     reference=instance.receipt_no, amount=instance.grand_total,
-                    date=timezone.localdate(instance.sold_at), status=instance.status,
+                    date=timezone.localdate(instance.sold_at),
+                    time=timezone.localtime(instance.sold_at).strftime('%H:%M'),
+                    status=instance.status,
                     user=instance.cashier)
     if isinstance(instance, DeliveryNote) and event_key.startswith('retail.delivery_'):
         if instance.sale.status != 'completed' or not instance.sale.branch_id:
@@ -60,7 +62,13 @@ def _event_row(event_key, instance):
         return dict(branch=None, name=instance.customer_name,
                     phone=instance.customer_phone, reference=instance.reference,
                     pickup=instance.origin, destination=instance.destination,
-                    date=instance.schedule_label, amount=instance.quoted_amount,
+                    date=instance.schedule_label,
+                    time=(
+                        instance.requested_time.strftime('%H:%M')
+                        if instance.requested_time
+                        else 'Muda haujawekwa'
+                    ),
+                    amount=instance.quoted_amount,
                     status=instance.status, user=instance.created_by)
     if isinstance(instance, Trip) and event_key.startswith('transport.trip_'):
         required={'transport.trip_reminder': 'planned', 'transport.trip_underway':'in_progress',
@@ -75,6 +83,7 @@ def _event_row(event_key, instance):
                     reference=instance.reference, pickup=instance.origin,
                     destination=instance.destination,
                     date=timezone.localtime(instance.scheduled_start).strftime('%d %b %Y %H:%M'),
+                    time=timezone.localtime(instance.scheduled_start).strftime('%H:%M'),
                     amount=instance.agreed_fee, status=instance.status,
                     vehicle=instance.vehicle.registration, driver=instance.driver.full_name,
                     customer=instance.customer_name, customer_phone=instance.customer_phone, user=instance.created_by)
@@ -124,6 +133,22 @@ def enqueue_event(event_key, model, pk):
             )
             return None
         payload={**row, 'phone':phone, 'branch':branch.name if branch else 'HAMA NA KILASI'}
+        variables = {
+            next(x for x in match.groups() if x is not None).lower()
+            for match in VARIABLE_PATTERN.finditer(rule.template.body or '')
+        }
+
+        if 'time' in variables:
+            if event_key in (
+                'transport.booking_received',
+                'transport.booking_confirmed',
+            ):
+                payload['date'] = instance.requested_date.strftime('%d %b %Y')
+            elif event_key.startswith('transport.trip_'):
+                payload['date'] = timezone.localtime(
+                    instance.scheduled_start
+                ).strftime('%d %b %Y')
+
         message=personalized(rule.template.body,payload)
         due=timezone.now()
         if event_key == 'transport.trip_reminder':
